@@ -1,10 +1,19 @@
 import { createBrowserRouter } from "react-router-dom";
+import MainLayout from "#/layouts/MainLayout";
+import Dashboard from "#/pages/dashboard";
+import ComingSoon from "#/pages/ComingSoon";
 
 const router = createBrowserRouter([
- {
-    path: '/',
-    element: <></>
- }
+  {
+    path: "/",
+    element: <MainLayout />,
+    children: [
+      { index: true, element: <Dashboard /> },
+      { path: "poslovi", element: <ComingSoon title="Poslovi" /> },
+      { path: "cjenik", element: <ComingSoon title="Cjenik" /> },
+      { path: "postavke", element: <ComingSoon title="Postavke" /> },
+    ],
+  },
 ]);
 
 export default router;
