@@ -27,7 +27,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <Box sx={dashboardLoadingSx}>
-        <CircularProgress size={28} />
+        <CircularProgress size={120} />
       </Box>
     );
   }
@@ -45,10 +45,10 @@ const Dashboard = () => {
       <Stack direction="row" sx={dashboardHeaderSx}>
         <Box>
           <Typography variant="h5" sx={dashboardTitleSx}>
-            Dobar dan, {data.userName}
+            Dobar dan, {data?.userName}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            {data.period}
+            {data?.period}
           </Typography>
         </Box>
         <Button variant="outlined" sx={dashboardButtonSx}>

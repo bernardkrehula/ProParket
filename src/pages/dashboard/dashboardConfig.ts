@@ -4,6 +4,7 @@ export const dashboardLoadingSx: SxProps<Theme> = {
   display: "flex",
   justifyContent: "center",
   py: 10,
+  marginTop: 25
 };
 
 export const dashboardHeaderSx: SxProps<Theme> = {

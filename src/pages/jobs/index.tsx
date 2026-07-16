@@ -72,7 +72,7 @@ const Jobs = () => {
   if (isLoading) {
     return (
       <Box sx={jobsLoadingSx}>
-        <CircularProgress size={28} />
+        <CircularProgress size={120} />
       </Box>
     );
   }
