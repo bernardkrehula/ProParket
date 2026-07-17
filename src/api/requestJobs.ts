@@ -1,6 +1,5 @@
 import supabase from "#/config/supabaseClientVite";
-import { GenericError } from "#/utils/GenericError";
-import { isAuthApiError } from "@supabase/supabase-js";
+import { handleSupabaseError } from "#/lib/handleSupabaseError";
 
 export const requestJobs = async (search?: string) => {
   const query = supabase
@@ -16,13 +15,8 @@ export const requestJobs = async (search?: string) => {
     response = await query;
   }
 
-  if (response.error) {
-    if (isAuthApiError(response)) {
-      return response.error;
-    } else {
-      throw new GenericError();
-    }
-  }
+  const authError = handleSupabaseError(response);
+  if (authError) return authError;
 
   return response;
 };
