@@ -5,28 +5,45 @@ import {
   Button,
   CircularProgress,
   InputAdornment,
+  MenuItem,
+  Select,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { debounce } from "throttle-debounce";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { requestJobs } from "#/api/requestJobs";
+import { requestAddNewJob } from "#/api/requestAddNewJob";
+import { requestEditJob } from "#/api/requestEditJob";
+import type { NewJob } from "#/api/requestAddNewJob";
+import type { JobType } from "#/types/Job.type";
+import { getJobStatus, JOB_STATUS_LABELS } from "#/utils/getJobStatus";
+import type { JobStatus } from "#/utils/getJobStatus";
 import JobsTable from "./components/JobsTable";
+import JobFormModal from "./components/JobFormModal";
 import {
   jobsLoadingSx,
   jobsHeaderSx,
   jobsTitleSx,
   jobsFiltersSx,
   jobsSearchFieldSx,
+  jobsStatusSelectSx,
   PAGE_SIZE,
+  ALL_STATUSES,
 } from "./jobsConfig";
 
 const Jobs = () => {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<typeof ALL_STATUSES | JobStatus>(ALL_STATUSES);
   const [page, setPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<JobType | null>(null);
+
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["jobs", search],
@@ -38,11 +55,32 @@ const Jobs = () => {
     return data && "data" in data && data.data ? data.data : [];
   }, [data]);
 
-  const pageCount = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE));
+  const filteredJobs = useMemo(() => {
+    if (statusFilter === ALL_STATUSES) return jobs;
+    return jobs.filter((job) => getJobStatus(job) === statusFilter);
+  }, [jobs, statusFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
-  const rangeStart = jobs.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const rangeEnd = Math.min(currentPage * PAGE_SIZE, jobs.length);
-  const pagedJobs = jobs.slice((currentPage - 1) * PAGE_SIZE, rangeEnd);
+  const rangeStart = filteredJobs.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, filteredJobs.length);
+  const pagedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, rangeEnd);
+
+  const onJobSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    setIsModalOpen(false);
+  };
+
+  const addJobMutation = useMutation({
+    mutationFn: requestAddNewJob,
+    onSuccess: onJobSaved,
+  });
+
+  const editJobMutation = useMutation({
+    mutationFn: (payload: { id: string; values: NewJob }) =>
+      requestEditJob(payload.id, payload.values),
+    onSuccess: onJobSaved,
+  });
 
   const debouncedSearch = useMemo(
     () =>
@@ -61,12 +99,39 @@ const Jobs = () => {
     debouncedSearch(event.target.value);
   };
 
+  const onStatusFilterChange = (event: SelectChangeEvent) => {
+    setStatusFilter(event.target.value as typeof ALL_STATUSES | JobStatus);
+    setPage(1);
+  };
+
   const onPrevPage = () => {
     setPage((prev) => Math.max(1, prev - 1));
   };
 
   const onNextPage = () => {
     setPage((prev) => Math.min(pageCount, prev + 1));
+  };
+
+  const onOpenAddJobModal = () => {
+    setSelectedJob(null);
+    setIsModalOpen(true);
+  };
+
+  const onOpenEditJobModal = (job: JobType) => {
+    setSelectedJob(job);
+    setIsModalOpen(true);
+  };
+
+  const onCloseJobModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const onSubmitJobForm = (values: NewJob) => {
+    if (selectedJob) {
+      editJobMutation.mutate({ id: selectedJob.id, values });
+    } else {
+      addJobMutation.mutate(values);
+    }
   };
 
   if (isLoading) {
@@ -87,16 +152,16 @@ const Jobs = () => {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" sx={jobsHeaderSx}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={jobsHeaderSx}>
         <Typography variant="h5" sx={jobsTitleSx}>
           Svi poslovi
         </Typography>
-        <Button variant="contained" startIcon={<AddRoundedIcon />}>
+        <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={onOpenAddJobModal}>
           Novi posao
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={jobsFiltersSx}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={jobsFiltersSx}>
         <TextField
           placeholder="Pretraži adresu..."
           defaultValue={search}
@@ -113,17 +178,38 @@ const Jobs = () => {
             },
           }}
         />
+        <Select
+          value={statusFilter}
+          onChange={onStatusFilterChange}
+          size="small"
+          sx={jobsStatusSelectSx}
+        >
+          <MenuItem value={ALL_STATUSES}>Svi statusi</MenuItem>
+          <MenuItem value="new">{JOB_STATUS_LABELS.new}</MenuItem>
+          <MenuItem value="in_progress">{JOB_STATUS_LABELS.in_progress}</MenuItem>
+          <MenuItem value="completed">{JOB_STATUS_LABELS.completed}</MenuItem>
+        </Select>
       </Stack>
 
       <JobsTable
         jobs={pagedJobs}
         rangeStart={rangeStart}
         rangeEnd={rangeEnd}
-        total={jobs.length}
+        total={filteredJobs.length}
         onPrevPage={onPrevPage}
         onNextPage={onNextPage}
+        onRowClick={onOpenEditJobModal}
         hasPrevPage={currentPage > 1}
         hasNextPage={currentPage < pageCount}
+      />
+
+      <JobFormModal
+        key={isModalOpen ? (selectedJob?.id ?? "new") : "closed"}
+        open={isModalOpen}
+        onClose={onCloseJobModal}
+        onSubmit={onSubmitJobForm}
+        job={selectedJob}
+        isSubmitting={addJobMutation.isPending || editJobMutation.isPending}
       />
     </Stack>
   );
