@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
+import { useMemo, useRef, useState } from "react";
+import type { ChangeEvent, MouseEvent } from "react";
 import {
   Box,
   Button,
@@ -7,16 +7,20 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
+import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import supabase from "#/config/supabaseClientVite";
 import type { JobType } from "#/types/Job.type";
 import type { NewJob } from "#/api/requestAddNewJob";
 import { requestAddJobPhoto, MAX_JOB_PHOTO_SIZE_BYTES } from "#/api/requestAddJobPhoto";
 import { requestJobPhotos } from "#/api/requestJobPhotos";
+import { useClickOutside } from "#/hooks/useClickOutside";
 import { GenericError } from "#/utils/GenericError";
 import { formatDate } from "#/utils/format";
 import {
@@ -31,7 +35,13 @@ import {
   jobPhotoActionsRowSx,
   jobPhotoGridSx,
   jobPhotoThumbnailSx,
+  jobPhotoPreviewBackdropSx,
+  jobPhotoPreviewPaperSx,
+  jobPhotoPreviewContainerSx,
   jobPhotoPreviewImageSx,
+  jobPhotoPreviewPrevButtonSx,
+  jobPhotoPreviewNextButtonSx,
+  jobFormModalFieldsSx,
   EMPTY_JOB_FORM_VALUES,
 } from "./jobFormModalConfig";
 
@@ -78,10 +88,14 @@ const jobToFormValues = (job?: JobType | null): JobFormValues => {
 };
 
 const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormModalProps) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [values, setValues] = useState<JobFormValues>(() => jobToFormValues(job));
   const [mode, setMode] = useState<ModalMode>(() => (job ? "view" : "edit"));
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const previewImageRef = useRef<HTMLImageElement>(null);
 
   const isNewJob = !job;
   const isViewMode = mode === "view";
@@ -96,16 +110,10 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
 
   const photos = useMemo(() => {
     const response = photosQuery.data;
-    if (!job || !response || !("data" in response) || !response.data) return [];
+    if (!response || !("data" in response) || !response.data) return [];
 
-    return response.data
-      .filter((file) => file.id)
-      .map((file) => ({
-        name: file.name,
-        url: supabase.storage.from("job-photos").getPublicUrl(`${job.id}/${file.name}`).data
-          .publicUrl,
-      }));
-  }, [job, photosQuery.data]);
+    return response.data;
+  }, [photosQuery.data]);
 
   const addPhotoMutation = useMutation({
     mutationFn: (photo: File) => {
@@ -135,9 +143,21 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
     addPhotoMutation.mutate(file);
   };
 
-  const onPreviewPhoto = (url: string) => () => setPreviewUrl(url);
+  const onPreviewPhoto = (index: number) => () => setPreviewIndex(index);
 
-  const onClosePreview = () => setPreviewUrl(null);
+  const onClosePreview = () => setPreviewIndex(null);
+
+  const onPrevPhoto = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setPreviewIndex((prev) => (prev === null ? prev : (prev - 1 + photos.length) % photos.length));
+  };
+
+  const onNextPhoto = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setPreviewIndex((prev) => (prev === null ? prev : (prev + 1) % photos.length));
+  };
+
+  useClickOutside(previewImageRef, onClosePreview, previewIndex !== null);
 
   const handleChange = (field: keyof JobFormValues) => (event: ChangeEvent<HTMLInputElement>) => {
     setValues((prev) => ({ ...prev, [field]: event.target.value }));
@@ -184,8 +204,11 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
 
   const modalTitle = isNewJob ? "Novi posao" : isViewMode ? "Detalji posla" : "Uredi posao";
 
+  const previewPhoto = previewIndex !== null ? photos[previewIndex] : null;
+  const hasMultiplePhotos = photos.length > 1;
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={isMobile}>
       <DialogTitle sx={jobFormModalTitleSx}>{modalTitle}</DialogTitle>
 
       <DialogContent sx={jobFormModalContentSx}>
@@ -205,7 +228,7 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
             ))}
           </Stack>
         ) : (
-          <Stack spacing={2}>
+          <Stack spacing={2} sx={jobFormModalFieldsSx}>
             <TextField
               label="Adresa"
               value={values.address}
@@ -213,7 +236,7 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
               fullWidth
             />
 
-            <Stack direction="row" sx={jobFormModalRowSx}>
+            <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
               <TextField
                 label="Klijent"
                 value={values.client_name}
@@ -228,7 +251,7 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
               />
             </Stack>
 
-            <Stack direction="row" sx={jobFormModalRowSx}>
+            <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
               <TextField
                 label="Datum"
                 type="date"
@@ -277,7 +300,7 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
             </Typography>
 
             {!isViewMode && (
-              <Stack direction="row" spacing={2} sx={jobPhotoActionsRowSx}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={jobPhotoActionsRowSx}>
                 <Button component="label" variant="outlined" disabled={addPhotoMutation.isPending}>
                   {addPhotoMutation.isPending ? "Učitavanje..." : "Dodaj fotografiju"}
                   <input type="file" accept="image/*" hidden onChange={handlePhotoChange} />
@@ -298,12 +321,12 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
 
             {photos.length > 0 ? (
               <Box sx={jobPhotoGridSx}>
-                {photos.map((photo) => (
+                {photos.map((photo, index) => (
                   <Box
                     key={photo.name}
                     component="img"
-                    src={photo.url}
-                    onClick={onPreviewPhoto(photo.url)}
+                    src={photo.url ?? undefined}
+                    onClick={onPreviewPhoto(index)}
                     sx={jobPhotoThumbnailSx}
                   />
                 ))}
@@ -339,9 +362,38 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
         )}
       </DialogActions>
 
-      <Dialog open={Boolean(previewUrl)} onClose={onClosePreview} maxWidth="md" fullWidth>
-        {previewUrl && (
-          <Box component="img" src={previewUrl} sx={jobPhotoPreviewImageSx} />
+      <Dialog
+        open={Boolean(previewPhoto)}
+        onClose={onClosePreview}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+        slotProps={{
+          backdrop: { sx: jobPhotoPreviewBackdropSx },
+          paper: { sx: jobPhotoPreviewPaperSx },
+        }}
+      >
+        {previewPhoto && (
+          <Box sx={jobPhotoPreviewContainerSx}>
+            {hasMultiplePhotos && (
+              <IconButton onClick={onPrevPhoto} sx={jobPhotoPreviewPrevButtonSx} aria-label="Prethodna fotografija">
+                <ChevronLeft />
+              </IconButton>
+            )}
+
+            <Box
+              ref={previewImageRef}
+              component="img"
+              src={previewPhoto.url ?? undefined}
+              sx={jobPhotoPreviewImageSx}
+            />
+
+            {hasMultiplePhotos && (
+              <IconButton onClick={onNextPhoto} sx={jobPhotoPreviewNextButtonSx} aria-label="Sljedeća fotografija">
+                <ChevronRight />
+              </IconButton>
+            )}
+          </Box>
         )}
       </Dialog>
     </Dialog>
