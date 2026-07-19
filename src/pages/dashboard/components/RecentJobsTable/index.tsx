@@ -15,6 +15,8 @@ import { formatCurrency } from "#/utils/format";
 import {
   recentJobsTableRootSx,
   recentJobsTableTitleSx,
+  recentJobsTableSx,
+  recentJobsTableContainerSx,
   recentJobsTableHeaderCellSx,
   recentJobsTableBodyCellSx,
   recentJobsTableServiceStackSx,
@@ -32,8 +34,8 @@ const RecentJobsTable = ({ jobs }: RecentJobsTableProps) => {
       <Typography variant="subtitle1" sx={recentJobsTableTitleSx}>
         Nedavni poslovi
       </Typography>
-      <TableContainer>
-        <Table size="small">
+      <TableContainer sx={recentJobsTableContainerSx}>
+        <Table size="small" sx={recentJobsTableSx}>
           <TableHead>
             <TableRow>
               <TableCell sx={recentJobsTableHeaderCellSx}>Adresa</TableCell>
