@@ -16,6 +16,7 @@ import {
   dashboardHeaderSx,
   dashboardTitleSx,
   dashboardButtonSx,
+  dashboardStatsRowSx,
 } from "./dashboardConfig";
 
 const Dashboard = () => {
@@ -42,7 +43,7 @@ const Dashboard = () => {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" sx={dashboardHeaderSx}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={dashboardHeaderSx}>
         <Box>
           <Typography variant="h5" sx={dashboardTitleSx}>
             Dobar dan, {data?.userName}
@@ -56,7 +57,7 @@ const Dashboard = () => {
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={2}>
+      <Box sx={dashboardStatsRowSx}>
         <StatCard
           label="Ukupna zarada"
           value={formatCurrency(data.totalEarnings)}
@@ -71,7 +72,7 @@ const Dashboard = () => {
           emphasizeAsProfit
         />
         <StatCard label="Broj poslova" value={String(data.jobsCount)} />
-      </Stack>
+      </Box>
 
       <EarningsByServiceChart data={data.earningsByService} />
 
