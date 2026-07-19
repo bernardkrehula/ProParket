@@ -1,11 +1,13 @@
 import { Box, Stack, Typography } from "@mui/material";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
 import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import type { SvgIconComponent } from "@mui/icons-material";
+import { requestLogout } from "#/api/auth/requestLogout";
 import {
   navbarRootSx,
   brandStackSx,
@@ -16,12 +18,18 @@ import {
   navItemSx,
   navItemIconSx,
   navItemLabelSx,
+  navLogoutSx,
 } from "./navbarConfig";
+import { useSession } from "#/hooks/useSession";
 
 type NavItem = {
   label: string;
   to: string;
   icon: SvgIconComponent;
+};
+
+type NavbarProps = {
+  onNavigate?: () => void;
 };
 
 const navItems: NavItem[] = [
@@ -31,7 +39,20 @@ const navItems: NavItem[] = [
   { label: "Postavke", to: "/postavke", icon: SettingsOutlinedIcon },
 ];
 
-const Navbar = () => {
+const Navbar = ({ onNavigate }: NavbarProps) => {
+  const navigate = useNavigate();
+  const { clearSession } = useSession();
+
+  const onLogout = async () => {
+    try {
+      await requestLogout();
+    } finally {
+      navigate("/login");
+      clearSession();
+      onNavigate?.();
+    }
+  };
+
   return (
     <Box component="nav" sx={navbarRootSx}>
       <Stack direction="row" spacing={1.5} sx={brandStackSx}>
@@ -50,6 +71,7 @@ const Navbar = () => {
             component={NavLink}
             to={to}
             end={to === "/"}
+            onClick={onNavigate}
             sx={navItemSx}
           >
             <Icon sx={navItemIconSx} />
@@ -59,6 +81,13 @@ const Navbar = () => {
           </Box>
         ))}
       </Stack>
+
+      <Box component="button" type="button" onClick={onLogout} sx={navLogoutSx}>
+        <LogoutRoundedIcon sx={navItemIconSx} />
+        <Typography variant="body2" color="inherit" sx={navItemLabelSx}>
+          Odjava
+        </Typography>
+      </Box>
     </Box>
   );
 };
