@@ -5,7 +5,26 @@ export const jobFormModalTitleSx: SxProps<Theme> = {
 };
 
 export const jobFormModalContentSx: SxProps<Theme> = {
-  pt: 2,
+  pt: 3,
+  scrollbarWidth: "thin",
+  scrollbarColor: "#3b5bdb transparent",
+  "&::-webkit-scrollbar": {
+    width: 6,
+  },
+  "&::-webkit-scrollbar-track": {
+    background: "transparent",
+  },
+  "&::-webkit-scrollbar-thumb": {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 8,
+  },
+  "&::-webkit-scrollbar-thumb:hover": {
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+};
+
+export const jobFormModalFieldsSx: SxProps<Theme> = {
+  mt: 2,
 };
 
 export const jobFormModalRowSx: SxProps<Theme> = {
@@ -55,13 +74,54 @@ export const jobPhotoThumbnailSx: SxProps<Theme> = {
   borderColor: "divider",
 };
 
-export const jobPhotoPreviewImageSx: SxProps<Theme> = {
+export const jobPhotoPreviewBackdropSx = {
+  backdropFilter: "blur(16px)",
+  bgcolor: "rgba(0, 0, 0, 0.55)",
+};
+
+export const jobPhotoPreviewPaperSx: SxProps<Theme> = {
+  bgcolor: "transparent",
+  boxShadow: "none",
+};
+
+export const jobPhotoPreviewContainerSx: SxProps<Theme> = {
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   width: "100%",
-  aspectRatio: "1 / 1",
-  maxHeight: "80vh",
+  height: { xs: "100dvh", sm: "80vh" },
+  bgcolor: "transparent",
+  boxShadow: "none",
+};
+
+export const jobPhotoPreviewImageSx: SxProps<Theme> = {
+  maxWidth: "100%",
+  maxHeight: "100%",
   objectFit: "contain",
   display: "block",
-  bgcolor: "background.default",
+  borderRadius: 1,
+};
+
+export const jobPhotoPreviewNavButtonSx: SxProps<Theme> = {
+  position: "absolute",
+  top: "50%",
+  transform: "translateY(-50%)",
+  color: "common.white",
+  bgcolor: "rgba(0, 0, 0, 0.35)",
+  "&:hover": {
+    bgcolor: "rgba(0, 0, 0, 0.55)",
+  },
+};
+
+export const jobPhotoPreviewPrevButtonSx: SxProps<Theme> = {
+  ...jobPhotoPreviewNavButtonSx,
+  left: { xs: 8, sm: 16 },
+};
+
+export const jobPhotoPreviewNextButtonSx: SxProps<Theme> = {
+  ...jobPhotoPreviewNavButtonSx,
+  right: { xs: 8, sm: 16 },
 };
 
 export const EMPTY_JOB_FORM_VALUES = {
