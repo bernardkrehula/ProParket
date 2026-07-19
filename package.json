@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "upload-jobs": "node src/scripts/jobsDataUpload.js"
+    "upload-jobs": "node src/scripts/jobsDataUpload.js",
+    "upload-job-services": "node src/scripts/jobServicesUpload.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
