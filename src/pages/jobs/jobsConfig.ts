@@ -25,7 +25,7 @@ export const jobsSearchFieldSx: SxProps<Theme> = {
 };
 
 export const jobsStatusSelectSx: SxProps<Theme> = {
-  minWidth: 160,
+  minWidth: { xs: "100%", sm: 160 },
 };
 
 export const PAGE_SIZE = 10;
