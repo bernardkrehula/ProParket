@@ -25,7 +25,7 @@ const EarningsByServiceChart = ({ data }: EarningsByServiceChartProps) => {
       <Typography variant="subtitle1" sx={earningsChartTitleSx}>
         Zarada po usluzi
       </Typography>
-      <Stack direction="row" spacing={3} sx={earningsChartBarsRowSx}>
+      <Stack direction="row" spacing={{ xs: 1, sm: 3 }} sx={earningsChartBarsRowSx}>
         {data.map((item) => (
           <Box key={item.id} sx={earningsChartBarColumnSx}>
             <Typography
