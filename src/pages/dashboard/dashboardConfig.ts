@@ -20,3 +20,9 @@ export const dashboardButtonSx: SxProps<Theme> = {
   borderColor: "divider",
   color: "text.primary",
 };
+
+export const dashboardStatsRowSx: SxProps<Theme> = {
+  display: "grid",
+  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(4, 1fr)" },
+  gap: 2,
+};
