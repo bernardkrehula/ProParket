@@ -13,7 +13,7 @@ const PrivateRoutes = () => {
     );
   }
 
-  if (!session?.data.session && false) {
+  if (!session?.data.session) {
     return <Navigate to="/login" replace />;
   }
 
