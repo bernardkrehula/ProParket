@@ -15,11 +15,16 @@ import type { SelectChangeEvent } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { debounce } from "throttle-debounce";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { requestJobs } from "#/api/requestJobs";
-import { requestAddNewJob } from "#/api/requestAddNewJob";
-import { requestEditJob } from "#/api/requestEditJob";
-import type { NewJob } from "#/api/requestAddNewJob";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { requestJobs } from "#/api/jobs/requestJobs";
+import { requestAddNewJob } from "#/api/jobs/requestAddNewJob";
+import { requestEditJob } from "#/api/jobs/requestEditJob";
+import type { NewJob } from "#/api/jobs/requestAddNewJob";
 import type { JobType } from "#/types/Job.type";
 import { getJobStatus, JOB_STATUS_LABELS } from "#/utils/getJobStatus";
 import type { JobStatus } from "#/utils/getJobStatus";
@@ -38,7 +43,9 @@ import {
 
 const Jobs = () => {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<typeof ALL_STATUSES | JobStatus>(ALL_STATUSES);
+  const [statusFilter, setStatusFilter] = useState<
+    typeof ALL_STATUSES | JobStatus
+  >(ALL_STATUSES);
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobType | null>(null);
@@ -62,7 +69,8 @@ const Jobs = () => {
 
   const pageCount = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
-  const rangeStart = filteredJobs.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeStart =
+    filteredJobs.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(currentPage * PAGE_SIZE, filteredJobs.length);
   const pagedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, rangeEnd);
 
@@ -126,12 +134,17 @@ const Jobs = () => {
     setIsModalOpen(false);
   };
 
-  const onSubmitJobForm = (values: NewJob) => {
+  const onSubmitJobForm = async (values: NewJob): Promise<string | undefined> => {
     if (selectedJob) {
-      editJobMutation.mutate({ id: selectedJob.id, values });
-    } else {
-      addJobMutation.mutate(values);
+      await editJobMutation.mutateAsync({ id: selectedJob.id, values });
+      return selectedJob.id;
     }
+
+    const result = await addJobMutation.mutateAsync(values);
+    if (result && "data" in result && result.data) {
+      return result.data[0]?.id;
+    }
+    return undefined;
   };
 
   if (isLoading) {
@@ -152,16 +165,28 @@ const Jobs = () => {
 
   return (
     <Stack spacing={3}>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={jobsHeaderSx}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        sx={jobsHeaderSx}
+      >
         <Typography variant="h5" sx={jobsTitleSx}>
           Svi poslovi
         </Typography>
-        <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={onOpenAddJobModal}>
+        <Button
+          variant="contained"
+          startIcon={<AddRoundedIcon />}
+          onClick={onOpenAddJobModal}
+        >
           Novi posao
         </Button>
       </Stack>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={jobsFiltersSx}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        sx={jobsFiltersSx}
+      >
         <TextField
           placeholder="Pretraži adresu..."
           defaultValue={search}
@@ -186,7 +211,9 @@ const Jobs = () => {
         >
           <MenuItem value={ALL_STATUSES}>Svi statusi</MenuItem>
           <MenuItem value="new">{JOB_STATUS_LABELS.new}</MenuItem>
-          <MenuItem value="in_progress">{JOB_STATUS_LABELS.in_progress}</MenuItem>
+          <MenuItem value="in_progress">
+            {JOB_STATUS_LABELS.in_progress}
+          </MenuItem>
           <MenuItem value="completed">{JOB_STATUS_LABELS.completed}</MenuItem>
         </Select>
       </Stack>
