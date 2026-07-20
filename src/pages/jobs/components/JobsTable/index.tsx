@@ -63,7 +63,7 @@ const JobsTable = ({
               <TableCell sx={jobsTableHeaderCellSx}>Adresa</TableCell>
               <TableCell sx={jobsTableHeaderCellSx}>Klijent</TableCell>
               <TableCell sx={jobsTableHeaderCellSx}>Telefon</TableCell>
-              <TableCell sx={jobsTableHeaderCellSx}>Datum</TableCell>
+              <TableCell sx={jobsTableHeaderCellSx}>Planirani datum</TableCell>
               <TableCell sx={jobsTableHeaderCellSx}>Datum završetka</TableCell>
               <TableCell sx={jobsTableHeaderCellSx}>Status</TableCell>
               <TableCell sx={jobsTableHeaderCellSx}>Napomena</TableCell>
@@ -82,7 +82,11 @@ const JobsTable = ({
                     {formatDate(job.date)}
                   </TableCell>
                   <TableCell sx={jobsTableBodyCellSx}>
-                    {job.date_finished ? formatDate(job.date_finished) : "U tijeku"}
+                    {job.date_finished
+                      ? formatDate(job.date_finished)
+                      : status === "new"
+                        ? "Planirano"
+                        : "U tijeku"}
                   </TableCell>
                   <TableCell sx={jobsTableBodyCellSx}>
                     <Chip

@@ -10,7 +10,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import type { RecentJob } from "#/api/dashboard";
+import type { RecentJob } from "#/api/dashboard/dashboard";
 import { formatCurrency } from "#/utils/format";
 import {
   recentJobsTableRootSx,

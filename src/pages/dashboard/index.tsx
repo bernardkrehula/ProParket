@@ -10,7 +10,7 @@ import EarningsByServiceChart from "./components/EarningsByServiceChart";
 import RecentJobsTable from "./components/RecentJobsTable";
 import { formatCurrency } from "#/utils/format";
 import { useQuery } from "@tanstack/react-query";
-import { fetchDashboardData } from "#/api/dashboard";
+import { fetchDashboardData } from "#/api/dashboard/dashboard";
 import {
   dashboardLoadingSx,
   dashboardHeaderSx,
@@ -43,7 +43,11 @@ const Dashboard = () => {
 
   return (
     <Stack spacing={3}>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={dashboardHeaderSx}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        sx={dashboardHeaderSx}
+      >
         <Box>
           <Typography variant="h5" sx={dashboardTitleSx}>
             Dobar dan, {data?.userName}

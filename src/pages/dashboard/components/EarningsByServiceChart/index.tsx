@@ -1,5 +1,5 @@
 import { Box, Paper, Stack, Typography } from "@mui/material";
-import type { ServiceEarning } from "#/api/dashboard";
+import type { ServiceEarning } from "#/api/dashboard/dashboard";
 import { formatCurrency } from "#/utils/format";
 import {
   earningsChartRootSx,
@@ -25,7 +25,11 @@ const EarningsByServiceChart = ({ data }: EarningsByServiceChartProps) => {
       <Typography variant="subtitle1" sx={earningsChartTitleSx}>
         Zarada po usluzi
       </Typography>
-      <Stack direction="row" spacing={{ xs: 1, sm: 3 }} sx={earningsChartBarsRowSx}>
+      <Stack
+        direction="row"
+        spacing={{ xs: 1, sm: 3 }}
+        sx={earningsChartBarsRowSx}
+      >
         {data.map((item) => (
           <Box key={item.id} sx={earningsChartBarColumnSx}>
             <Typography
@@ -53,9 +57,7 @@ const EarningsByServiceChart = ({ data }: EarningsByServiceChartProps) => {
             spacing={0.75}
             sx={earningsChartLegendItemSx}
           >
-            <Box
-              sx={{ ...earningsChartLegendDotSx, bgcolor: item.color }}
-            />
+            <Box sx={{ ...earningsChartLegendDotSx, bgcolor: item.color }} />
             <Typography variant="caption" color="textSecondary">
               {item.label}
             </Typography>
