@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent } from "react";
 import {
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -14,27 +15,48 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { ChevronLeft, ChevronRight } from "@mui/icons-material";
+import {
+  ChevronLeft,
+  ChevronRight,
+  KeyboardArrowUp,
+  KeyboardArrowDown,
+  Close,
+} from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JobType } from "#/types/Job.type";
-import type { NewJob } from "#/api/requestAddNewJob";
-import { requestAddJobPhoto, MAX_JOB_PHOTO_SIZE_BYTES } from "#/api/requestAddJobPhoto";
-import { requestJobPhotos } from "#/api/requestJobPhotos";
+import type { NewJob } from "#/api/jobs/requestAddNewJob";
+import {
+  requestAddJobPhoto,
+  MAX_JOB_PHOTO_SIZE_BYTES,
+} from "#/api/jobs/requestAddJobPhoto";
+import { requestJobPhotos } from "#/api/jobs/requestJobPhotos";
+import { requestDeleteJobPhoto } from "#/api/jobs/requestDeleteJobPhoto";
+import { requestJobItems } from "#/api/jobs/requestJobItems";
+import { requestSaveJobItems } from "#/api/jobs/requestSaveJobItems";
+import type { JobItemInput } from "#/api/jobs/requestSaveJobItems";
 import { useClickOutside } from "#/hooks/useClickOutside";
 import { GenericError } from "#/utils/GenericError";
 import { formatDate } from "#/utils/format";
 import {
   jobFormModalTitleSx,
+  jobFormModalPaperSx,
   jobFormModalContentSx,
   jobFormModalRowSx,
+  jobFormModalDateInputSx,
+  jobFormModalNumberInputSx,
+  jobFormModalStepperButtonsSx,
+  jobFormModalStepperButtonSx,
   jobFormModalActionsSx,
   jobFormModalCancelButtonSx,
   jobDetailLabelSx,
   jobDetailValueSx,
+  jobItemSectionSx,
   jobPhotoSectionSx,
   jobPhotoActionsRowSx,
   jobPhotoGridSx,
+  jobPhotoThumbnailWrapperSx,
   jobPhotoThumbnailSx,
+  jobPhotoDeleteButtonSx,
   jobPhotoPreviewBackdropSx,
   jobPhotoPreviewPaperSx,
   jobPhotoPreviewContainerSx,
@@ -43,6 +65,9 @@ import {
   jobPhotoPreviewNextButtonSx,
   jobFormModalFieldsSx,
   EMPTY_JOB_FORM_VALUES,
+  JOB_SERVICE_OPTIONS,
+  JOB_SERVICE_ID_TO_NAME,
+  JOB_SERVICE_NAME_TO_ID,
 } from "./jobFormModalConfig";
 
 type JobFormValues = typeof EMPTY_JOB_FORM_VALUES;
@@ -51,7 +76,7 @@ type ModalMode = "view" | "edit";
 type JobFormModalProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: NewJob) => void;
+  onSubmit: (values: NewJob) => Promise<string | undefined>;
   job?: JobType | null;
   isSubmitting?: boolean;
 };
@@ -67,9 +92,13 @@ const JOB_DETAIL_FIELDS: DetailField[] = [
   { label: "Adresa", key: "address" },
   { label: "Klijent", key: "client_name" },
   { label: "Telefon", key: "phone" },
-  { label: "Datum", key: "date", isDate: true },
-  { label: "Datum početka", key: "date_started", isDate: true },
-  { label: "Datum završetka", key: "date_finished", isDate: true, emptyFallback: "U tijeku" },
+  { label: "Planirani datum", key: "date", isDate: true },
+  {
+    label: "Datum završetka",
+    key: "date_finished",
+    isDate: true,
+    emptyFallback: "U tijeku",
+  },
   { label: "Napomena", key: "notes" },
 ];
 
@@ -81,21 +110,151 @@ const jobToFormValues = (job?: JobType | null): JobFormValues => {
     client_name: job.client_name,
     phone: job.phone,
     date: job.date,
-    date_started: job.date_started,
     date_finished: job.date_finished ?? "",
     notes: job.notes ?? "",
   };
 };
 
-const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormModalProps) => {
+type NumberStepperFieldProps = {
+  label: string;
+  value: string;
+  onValueChange: (value: string) => void;
+};
+
+const NumberStepperField = ({
+  label,
+  value,
+  onValueChange,
+}: NumberStepperFieldProps) => {
+  const onChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onValueChange(event.target.value);
+  };
+
+  const onStep = (direction: 1 | -1) => () => {
+    onValueChange(String(Math.max(0, (Number(value) || 0) + direction)));
+  };
+
+  return (
+    <TextField
+      label={label}
+      type="number"
+      value={value}
+      onChange={onChange}
+      slotProps={{
+        htmlInput: { min: 0 },
+        input: {
+          endAdornment: (
+            <Stack sx={jobFormModalStepperButtonsSx}>
+              <IconButton
+                size="small"
+                onClick={onStep(1)}
+                sx={jobFormModalStepperButtonSx}
+                aria-label={`Povećaj: ${label}`}
+              >
+                <KeyboardArrowUp fontSize="inherit" />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={onStep(-1)}
+                sx={jobFormModalStepperButtonSx}
+                aria-label={`Smanji: ${label}`}
+              >
+                <KeyboardArrowDown fontSize="inherit" />
+              </IconButton>
+            </Stack>
+          ),
+        },
+      }}
+      sx={jobFormModalNumberInputSx}
+      fullWidth
+    />
+  );
+};
+
+type JobItemsFieldsValues = {
+  services: string[];
+  square_meters: string;
+  price_per_m2: string;
+  material_cost: string;
+};
+
+export type JobItemsFieldsHandle = {
+  getValues: () => JobItemsFieldsValues;
+};
+
+type JobItemsFieldsProps = {
+  defaults: JobItemsFieldsValues;
+};
+
+const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
+  ({ defaults }, ref) => {
+    const [services, setServices] = useState(defaults.services);
+    const [squareMeters, setSquareMeters] = useState(defaults.square_meters);
+    const [pricePerM2, setPricePerM2] = useState(defaults.price_per_m2);
+    const [materialCost, setMaterialCost] = useState(defaults.material_cost);
+
+    useImperativeHandle(ref, () => ({
+      getValues: () => ({
+        services,
+        square_meters: squareMeters,
+        price_per_m2: pricePerM2,
+        material_cost: materialCost,
+      }),
+    }));
+
+    return (
+      <Stack spacing={2}>
+        <Autocomplete
+          multiple
+          options={JOB_SERVICE_OPTIONS}
+          value={services}
+          onChange={(_event, newValue) => setServices(newValue)}
+          renderInput={(params) => <TextField {...params} label="Usluge" />}
+        />
+
+        <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
+          <NumberStepperField
+            label="Kvadratura (m²)"
+            value={squareMeters}
+            onValueChange={setSquareMeters}
+          />
+          <NumberStepperField
+            label="Cijena po m²"
+            value={pricePerM2}
+            onValueChange={setPricePerM2}
+          />
+        </Stack>
+
+        <NumberStepperField
+          label="Trošak materijala"
+          value={materialCost}
+          onValueChange={setMaterialCost}
+        />
+      </Stack>
+    );
+  },
+);
+
+JobItemsFields.displayName = "JobItemsFields";
+
+const JobFormModal = ({
+  open,
+  onClose,
+  onSubmit,
+  job,
+  isSubmitting,
+}: JobFormModalProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const [values, setValues] = useState<JobFormValues>(() => jobToFormValues(job));
+  const [values, setValues] = useState<JobFormValues>(() =>
+    jobToFormValues(job),
+  );
   const [mode, setMode] = useState<ModalMode>(() => (job ? "view" : "edit"));
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const previewImageRef = useRef<HTMLImageElement>(null);
+  const jobItemsFieldsRef = useRef<JobItemsFieldsHandle>(null);
 
   const isNewJob = !job;
   const isViewMode = mode === "view";
@@ -115,6 +274,38 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
     return response.data;
   }, [photosQuery.data]);
 
+  const jobItemsQuery = useQuery({
+    queryKey: ["jobItems", job?.id],
+    queryFn: () => requestJobItems(job!.id),
+    enabled: Boolean(job?.id),
+  });
+
+  const jobItems = useMemo(() => {
+    const response = jobItemsQuery.data;
+    if (!response || !("data" in response) || !response.data) return [];
+
+    return response.data;
+  }, [jobItemsQuery.data]);
+
+  const jobItemDefaults = useMemo(() => {
+    const services = Array.from(
+      new Set(
+        jobItems
+          .map((item) => JOB_SERVICE_ID_TO_NAME[item.service_id])
+          .filter((name): name is string => Boolean(name)),
+      ),
+    );
+
+    const firstItem = jobItems[0];
+
+    return {
+      services,
+      square_meters: firstItem ? String(firstItem.square_meters) : "",
+      price_per_m2: firstItem ? String(firstItem.price_per_m2) : "",
+      material_cost: firstItem ? String(firstItem.material_cost) : "",
+    };
+  }, [jobItems]);
+
   const addPhotoMutation = useMutation({
     mutationFn: (photo: File) => {
       if (!job) throw new GenericError();
@@ -125,6 +316,27 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
     },
     onError: () => {
       setPhotoError("Došlo je do pogreške prilikom dodavanja fotografije.");
+    },
+  });
+
+  const deletePhotoMutation = useMutation({
+    mutationFn: (fileName: string) => {
+      if (!job) throw new GenericError();
+      return requestDeleteJobPhoto(job.id, fileName);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobPhotos", job?.id] });
+    },
+    onError: () => {
+      setPhotoError("Došlo je do pogreške prilikom brisanja fotografije.");
+    },
+  });
+
+  const saveJobItemsMutation = useMutation({
+    mutationFn: (payload: { jobId: string; items: JobItemInput[] }) =>
+      requestSaveJobItems(payload.jobId, payload.items),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["jobItems", variables.jobId] });
     },
   });
 
@@ -145,47 +357,78 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
 
   const onPreviewPhoto = (index: number) => () => setPreviewIndex(index);
 
+  const onDeletePhoto = (fileName: string) => (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    deletePhotoMutation.mutate(fileName);
+  };
+
   const onClosePreview = () => setPreviewIndex(null);
 
   const onPrevPhoto = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    setPreviewIndex((prev) => (prev === null ? prev : (prev - 1 + photos.length) % photos.length));
+    setPreviewIndex((prev) =>
+      prev === null ? prev : (prev - 1 + photos.length) % photos.length,
+    );
   };
 
   const onNextPhoto = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    setPreviewIndex((prev) => (prev === null ? prev : (prev + 1) % photos.length));
+    setPreviewIndex((prev) =>
+      prev === null ? prev : (prev + 1) % photos.length,
+    );
   };
 
   useClickOutside(previewImageRef, onClosePreview, previewIndex !== null);
 
-  const handleChange = (field: keyof JobFormValues) => (event: ChangeEvent<HTMLInputElement>) => {
-    setValues((prev) => ({ ...prev, [field]: event.target.value }));
-  };
+  const handleChange =
+    (field: keyof JobFormValues) => (event: ChangeEvent<HTMLInputElement>) => {
+      setValues((prev) => ({ ...prev, [field]: event.target.value }));
+    };
 
-  const handleSubmit = () => {
-    if (isNewJob) {
-      onSubmit({
-        address: values.address,
-        client_name: values.client_name,
-        phone: values.phone,
-        date: values.date,
-        date_started: values.date,
-        date_finished: null,
-        notes: values.notes || null,
-      });
+  const handleSubmit = async () => {
+    const itemsValues = jobItemsFieldsRef.current?.getValues();
+
+    let savedJobId: string | undefined;
+
+    try {
+      if (isNewJob) {
+        savedJobId = await onSubmit({
+          address: values.address,
+          client_name: values.client_name,
+          phone: values.phone,
+          date: values.date,
+          date_started: values.date,
+          date_finished: null,
+          notes: values.notes || null,
+        });
+      } else {
+        savedJobId = await onSubmit({
+          address: values.address,
+          client_name: values.client_name,
+          phone: values.phone,
+          date: values.date,
+          date_started: values.date,
+          date_finished: values.date_finished || null,
+          notes: values.notes || null,
+        });
+      }
+    } catch {
       return;
     }
 
-    onSubmit({
-      address: values.address,
-      client_name: values.client_name,
-      phone: values.phone,
-      date: values.date,
-      date_started: values.date_started,
-      date_finished: values.date_finished || null,
-      notes: values.notes || null,
-    });
+    if (!savedJobId || !itemsValues) return;
+
+    const items: JobItemInput[] = itemsValues.services
+      .map((name) => JOB_SERVICE_NAME_TO_ID[name])
+      .filter((serviceId): serviceId is string => Boolean(serviceId))
+      .map((serviceId) => ({
+        service_id: serviceId,
+        square_meters: Number(itemsValues.square_meters) || 0,
+        price_per_m2: Number(itemsValues.price_per_m2) || 0,
+        material_cost: Number(itemsValues.material_cost) || 0,
+      }));
+
+    saveJobItemsMutation.mutate({ jobId: savedJobId, items });
   };
 
   const onEnterEditMode = () => {
@@ -202,13 +445,24 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
     setMode("view");
   };
 
-  const modalTitle = isNewJob ? "Novi posao" : isViewMode ? "Detalji posla" : "Uredi posao";
+  const modalTitle = isNewJob
+    ? "Novi posao"
+    : isViewMode
+      ? "Detalji posla"
+      : "Uredi posao";
 
   const previewPhoto = previewIndex !== null ? photos[previewIndex] : null;
   const hasMultiplePhotos = photos.length > 1;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={isMobile}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      fullScreen={isMobile}
+      slotProps={{ paper: { sx: jobFormModalPaperSx } }}
+    >
       <DialogTitle sx={jobFormModalTitleSx}>{modalTitle}</DialogTitle>
 
       <DialogContent sx={jobFormModalContentSx}>
@@ -236,7 +490,10 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
               fullWidth
             />
 
-            <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              sx={jobFormModalRowSx}
+            >
               <TextField
                 label="Klijent"
                 value={values.client_name}
@@ -251,25 +508,19 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
               />
             </Stack>
 
-            <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              sx={jobFormModalRowSx}
+            >
               <TextField
-                label="Datum"
+                label="Planirani datum"
                 type="date"
                 value={values.date}
                 onChange={handleChange("date")}
                 slotProps={{ inputLabel: { shrink: true } }}
+                sx={jobFormModalDateInputSx}
                 fullWidth
               />
-              {!isNewJob && (
-                <TextField
-                  label="Datum početka"
-                  type="date"
-                  value={values.date_started}
-                  onChange={handleChange("date_started")}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  fullWidth
-                />
-              )}
               {!isNewJob && (
                 <TextField
                   label="Datum završetka"
@@ -277,6 +528,7 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
                   value={values.date_finished}
                   onChange={handleChange("date_finished")}
                   slotProps={{ inputLabel: { shrink: true } }}
+                  sx={jobFormModalDateInputSx}
                   fullWidth
                 />
               )}
@@ -293,6 +545,70 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
           </Stack>
         )}
 
+        <Stack spacing={2} sx={jobItemSectionSx}>
+          <Typography variant="caption" sx={jobDetailLabelSx}>
+            Stavka usluge
+          </Typography>
+
+          {jobItemsQuery.isError && (
+            <Typography variant="caption" color="error">
+              Došlo je do pogreške prilikom dohvaćanja stavki usluge.
+            </Typography>
+          )}
+
+          {isViewMode ? (
+            <Stack spacing={2}>
+              <Stack>
+                <Typography variant="caption" sx={jobDetailLabelSx}>
+                  Usluge
+                </Typography>
+                <Typography variant="body1" sx={jobDetailValueSx}>
+                  {jobItemDefaults.services.length > 0
+                    ? jobItemDefaults.services.join(", ")
+                    : "-"}
+                </Typography>
+              </Stack>
+
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                sx={jobFormModalRowSx}
+              >
+                <Stack>
+                  <Typography variant="caption" sx={jobDetailLabelSx}>
+                    Kvadratura (m²)
+                  </Typography>
+                  <Typography variant="body1" sx={jobDetailValueSx}>
+                    {jobItemDefaults.square_meters || "-"}
+                  </Typography>
+                </Stack>
+                <Stack>
+                  <Typography variant="caption" sx={jobDetailLabelSx}>
+                    Cijena po m²
+                  </Typography>
+                  <Typography variant="body1" sx={jobDetailValueSx}>
+                    {jobItemDefaults.price_per_m2 || "-"}
+                  </Typography>
+                </Stack>
+              </Stack>
+
+              <Stack>
+                <Typography variant="caption" sx={jobDetailLabelSx}>
+                  Trošak materijala
+                </Typography>
+                <Typography variant="body1" sx={jobDetailValueSx}>
+                  {jobItemDefaults.material_cost || "-"}
+                </Typography>
+              </Stack>
+            </Stack>
+          ) : (
+            <JobItemsFields
+              key={jobItemsQuery.dataUpdatedAt}
+              ref={jobItemsFieldsRef}
+              defaults={jobItemDefaults}
+            />
+          )}
+        </Stack>
+
         {job && (
           <Stack spacing={1} sx={jobPhotoSectionSx}>
             <Typography variant="caption" sx={jobDetailLabelSx}>
@@ -300,10 +616,25 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
             </Typography>
 
             {!isViewMode && (
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={jobPhotoActionsRowSx}>
-                <Button component="label" variant="outlined" disabled={addPhotoMutation.isPending}>
-                  {addPhotoMutation.isPending ? "Učitavanje..." : "Dodaj fotografiju"}
-                  <input type="file" accept="image/*" hidden onChange={handlePhotoChange} />
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                sx={jobPhotoActionsRowSx}
+              >
+                <Button
+                  component="label"
+                  variant="outlined"
+                  disabled={addPhotoMutation.isPending}
+                >
+                  {addPhotoMutation.isPending
+                    ? "Učitavanje..."
+                    : "Dodaj fotografiju"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handlePhotoChange}
+                  />
                 </Button>
                 {addPhotoMutation.isSuccess && !photoError && (
                   <Typography variant="caption" color="success.main">
@@ -322,13 +653,24 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
             {photos.length > 0 ? (
               <Box sx={jobPhotoGridSx}>
                 {photos.map((photo, index) => (
-                  <Box
-                    key={photo.name}
-                    component="img"
-                    src={photo.url ?? undefined}
-                    onClick={onPreviewPhoto(index)}
-                    sx={jobPhotoThumbnailSx}
-                  />
+                  <Box key={photo.name} sx={jobPhotoThumbnailWrapperSx}>
+                    <Box
+                      component="img"
+                      src={photo.url ?? undefined}
+                      onClick={onPreviewPhoto(index)}
+                      sx={jobPhotoThumbnailSx}
+                    />
+                    {!isViewMode && (
+                      <IconButton
+                        size="small"
+                        onClick={onDeletePhoto(photo.name)}
+                        sx={jobPhotoDeleteButtonSx}
+                        aria-label={`Ukloni fotografiju: ${photo.name}`}
+                      >
+                        <Close fontSize="inherit" />
+                      </IconButton>
+                    )}
+                  </Box>
                 ))}
               </Box>
             ) : (
@@ -355,7 +697,11 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
             <Button onClick={onCancelEdit} sx={jobFormModalCancelButtonSx}>
               Odustani
             </Button>
-            <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
               {isNewJob ? "Dodaj" : "Spremi"}
             </Button>
           </>
@@ -376,7 +722,11 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
         {previewPhoto && (
           <Box sx={jobPhotoPreviewContainerSx}>
             {hasMultiplePhotos && (
-              <IconButton onClick={onPrevPhoto} sx={jobPhotoPreviewPrevButtonSx} aria-label="Prethodna fotografija">
+              <IconButton
+                onClick={onPrevPhoto}
+                sx={jobPhotoPreviewPrevButtonSx}
+                aria-label="Prethodna fotografija"
+              >
                 <ChevronLeft />
               </IconButton>
             )}
@@ -389,7 +739,11 @@ const JobFormModal = ({ open, onClose, onSubmit, job, isSubmitting }: JobFormMod
             />
 
             {hasMultiplePhotos && (
-              <IconButton onClick={onNextPhoto} sx={jobPhotoPreviewNextButtonSx} aria-label="Sljedeća fotografija">
+              <IconButton
+                onClick={onNextPhoto}
+                sx={jobPhotoPreviewNextButtonSx}
+                aria-label="Sljedeća fotografija"
+              >
                 <ChevronRight />
               </IconButton>
             )}
