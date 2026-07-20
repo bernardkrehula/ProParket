@@ -15,6 +15,13 @@ body {
   background-color: var(--body-bg);
   overflow: hidden;
 }
+::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+  width: 0;
+  -webkit-appearance: none;
+  background: transparent;
+}
 :root {
   --body-bg: #111827;
 }
