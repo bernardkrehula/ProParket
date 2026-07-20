@@ -25,7 +25,7 @@ const router = createBrowserRouter([
         children: [
           /* { index: true, element: <Dashboard /> }, */
           { index: true, element: <Jobs /> },
-          { path: "poslovi", element: <Jobs /> },
+         /*  { path: "poslovi", element: <Jobs /> }, */
           { path: "raspored", element: <Schedule /> },
           { path: "cjenik", element: <ComingSoon title="Cjenik" /> },
           { path: "postavke", element: <ComingSoon title="Postavke" /> },
