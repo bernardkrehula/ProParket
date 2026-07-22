@@ -19,17 +19,17 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/ProParketLogo.png',
+            src: '/ProParketLogo2.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/ProParketLogo.png',
+            src: '/ProParketLogo2.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: '/ProParketLogo.png',
+            src: '/ProParketLogo2.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
