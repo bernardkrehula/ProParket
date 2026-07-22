@@ -10,6 +10,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { requestJobs } from "#/api/jobs/requestJobs";
 import { requestEditJob } from "#/api/jobs/requestEditJob";
+import { requestDeleteJob } from "#/api/jobs/requestDeleteJob";
 import type { NewJob } from "#/api/jobs/requestAddNewJob";
 import type { JobType } from "#/types/Job.type";
 import { getJobStatus, JOB_STATUS_LABELS } from "#/utils/getJobStatus";
@@ -25,6 +26,12 @@ import {
   scheduledJobsRowAddressSx,
   scheduledJobsStatusChipSx,
 } from "./scheduledJobsConfig";
+
+const toDateKey = (value: string) => {
+  const date = new Date(value);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
 
 const Schedule = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,12 +52,17 @@ const Schedule = () => {
     const groups = new Map<string, JobType[]>();
 
     jobs.forEach((job) => {
-      const existing = groups.get(job.date);
+      const dateKey = toDateKey(job.date);
+      const existing = groups.get(dateKey);
       if (existing) {
         existing.push(job);
       } else {
-        groups.set(job.date, [job]);
+        groups.set(dateKey, [job]);
       }
+    });
+
+    groups.forEach((jobsForDay) => {
+      jobsForDay.sort((a, b) => a.date.localeCompare(b.date));
     });
 
     return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
@@ -74,10 +86,22 @@ const Schedule = () => {
     },
   });
 
+  const deleteJobMutation = useMutation({
+    mutationFn: requestDeleteJob,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      setIsModalOpen(false);
+    },
+  });
+
   const onSubmitJobForm = async (values: NewJob): Promise<string | undefined> => {
     if (!selectedJob) return undefined;
     await editJobMutation.mutateAsync({ id: selectedJob.id, values });
     return selectedJob.id;
+  };
+
+  const onDeleteJob = (jobId: string) => {
+    deleteJobMutation.mutate(jobId);
   };
 
   if (isLoading) {
@@ -153,8 +177,9 @@ const Schedule = () => {
         open={isModalOpen}
         onClose={onCloseJobModal}
         onSubmit={onSubmitJobForm}
+        onDelete={onDeleteJob}
         job={selectedJob}
-        isSubmitting={editJobMutation.isPending}
+        isSubmitting={editJobMutation.isPending || deleteJobMutation.isPending}
       />
     </Stack>
   );

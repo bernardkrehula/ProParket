@@ -17,6 +17,7 @@ export const scheduledJobsDayGroupSx: SxProps<Theme> = {
 
 export const scheduledJobsDayHeadingSx: SxProps<Theme> = {
   fontWeight: 700,
+  textTransform: "capitalize",
 };
 
 export const scheduledJobsRowSx: SxProps<Theme> = {
