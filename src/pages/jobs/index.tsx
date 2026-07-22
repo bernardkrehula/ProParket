@@ -24,6 +24,7 @@ import {
 import { requestJobs } from "#/api/jobs/requestJobs";
 import { requestAddNewJob } from "#/api/jobs/requestAddNewJob";
 import { requestEditJob } from "#/api/jobs/requestEditJob";
+import { requestDeleteJob } from "#/api/jobs/requestDeleteJob";
 import type { NewJob } from "#/api/jobs/requestAddNewJob";
 import type { JobType } from "#/types/Job.type";
 import { getJobStatus, JOB_STATUS_LABELS } from "#/utils/getJobStatus";
@@ -90,6 +91,11 @@ const Jobs = () => {
     onSuccess: onJobSaved,
   });
 
+  const deleteJobMutation = useMutation({
+    mutationFn: requestDeleteJob,
+    onSuccess: onJobSaved,
+  });
+
   const debouncedSearch = useMemo(
     () =>
       debounce(1000, (value: string) => {
@@ -145,6 +151,10 @@ const Jobs = () => {
       return result.data[0]?.id;
     }
     return undefined;
+  };
+
+  const onDeleteJob = (jobId: string) => {
+    deleteJobMutation.mutate(jobId);
   };
 
   if (isLoading) {
@@ -235,8 +245,13 @@ const Jobs = () => {
         open={isModalOpen}
         onClose={onCloseJobModal}
         onSubmit={onSubmitJobForm}
+        onDelete={onDeleteJob}
         job={selectedJob}
-        isSubmitting={addJobMutation.isPending || editJobMutation.isPending}
+        isSubmitting={
+          addJobMutation.isPending ||
+          editJobMutation.isPending ||
+          deleteJobMutation.isPending
+        }
       />
     </Stack>
   );
