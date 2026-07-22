@@ -1,24 +1,57 @@
+
+import { GenericError } from "#/utils/GenericError";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import * as v from "valibot";
+import type { LoginScheme } from "../loginScheme";
+import { isAuthApiError } from "@supabase/supabase-js";
 
-export const useAuth = <T>(requestAuth: (payload: T) => Promise<unknown>) => {
+export const useAuth = (
+  handler,
+  authScheme?: typeof LoginScheme,
+) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [data, setData] = useState();
+  const [error, setError] = useState<string>();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleAuth = async (payload: T) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await requestAuth(payload);
-      navigate("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Nešto je pošlo po krivu.");
-    } finally {
-      setIsLoading(false);
-    }
+  const LocalErrorValidator = (credentials: CredentialsType) => {
+    const response = v.parse(authScheme, credentials);
+    return response;
   };
 
-  return { error, isLoading, handleAuth };
+
+  const clearErorrs = () => {
+    setTimeout(() => {
+      setError("");
+    }, 5000);
+  };
+
+  const handleAuth = async (credentials) => {
+    setIsLoading(true);
+    try {
+      if(credentials != null) LocalErrorValidator(credentials);
+      const result = await handler(credentials);
+
+      if (isAuthApiError(result)) {
+        setError(result.message);
+      } else {
+        setData(result);
+        navigate("/");
+      }
+    } catch (error: unknown) {
+      if (error instanceof v.ValiError) {
+        setError(error.message);
+      } else if (error instanceof GenericError) {
+        setError(error.message);
+      } else {
+        console.error("Unknown error:", error);
+        setError("An unexpected error occurred");
+      }
+    }
+    setIsLoading(false);
+    clearErorrs();
+  };
+
+  return { data, error, isLoading, handleAuth };
 };
