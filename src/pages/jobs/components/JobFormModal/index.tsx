@@ -61,6 +61,7 @@ import {
   jobPhotoPreviewImageSx,
   jobPhotoPreviewPrevButtonSx,
   jobPhotoPreviewNextButtonSx,
+  jobPhotoPreviewCloseButtonSx,
   jobFormModalFieldsSx,
   EMPTY_JOB_FORM_VALUES,
   JOB_SERVICE_OPTIONS,
@@ -800,6 +801,16 @@ const JobFormModal = ({
       >
         {previewPhoto && (
           <Box sx={jobPhotoPreviewContainerSx}>
+            {isMobile && (
+              <IconButton
+                onClick={onClosePreview}
+                sx={jobPhotoPreviewCloseButtonSx}
+                aria-label="Zatvori pregled"
+              >
+                <Close />
+              </IconButton>
+            )}
+
             {hasMultiplePhotos && (
               <IconButton
                 onClick={onPrevPhoto}

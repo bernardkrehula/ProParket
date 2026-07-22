@@ -191,6 +191,17 @@ export const jobPhotoPreviewNextButtonSx: SxProps<Theme> = {
   right: { xs: 8, sm: 16 },
 };
 
+export const jobPhotoPreviewCloseButtonSx: SxProps<Theme> = {
+  position: "absolute",
+  top: 8,
+  right: 8,
+  color: "common.white",
+  bgcolor: "rgba(0, 0, 0, 0.35)",
+  "&:hover": {
+    bgcolor: "rgba(0, 0, 0, 0.55)",
+  },
+};
+
 export const EMPTY_JOB_FORM_VALUES = {
   address: "",
   client_name: "",
