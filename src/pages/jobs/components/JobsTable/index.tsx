@@ -78,10 +78,10 @@ const JobsTable = ({
                   <TableCell sx={jobsTableBodyCellSx}>{job.address}</TableCell>
                   <TableCell sx={jobsTableBodyCellSx}>{job.client_name}</TableCell>
                   <TableCell sx={jobsTableBodyCellSx}>{job.phone}</TableCell>
-                  <TableCell sx={jobsTableBodyCellSx}>
+                  <TableCell sx={{ ...jobsTableBodyCellSx, textTransform: "capitalize" }}>
                     {formatDate(job.date)}
                   </TableCell>
-                  <TableCell sx={jobsTableBodyCellSx}>
+                  <TableCell sx={{ ...jobsTableBodyCellSx, textTransform: "capitalize" }}>
                     {job.date_finished
                       ? formatDate(job.date_finished)
                       : status === "new"
