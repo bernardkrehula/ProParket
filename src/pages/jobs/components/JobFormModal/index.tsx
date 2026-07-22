@@ -25,10 +25,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JobType } from "#/types/Job.type";
 import type { NewJob } from "#/api/jobs/requestAddNewJob";
-import {
-  requestAddJobPhoto,
-  MAX_JOB_PHOTO_SIZE_BYTES,
-} from "#/api/jobs/requestAddJobPhoto";
+import { requestAddJobPhoto } from "#/api/jobs/requestAddJobPhoto";
 import { requestJobPhotos } from "#/api/jobs/requestJobPhotos";
 import { requestDeleteJobPhoto } from "#/api/jobs/requestDeleteJobPhoto";
 import { requestJobItems } from "#/api/jobs/requestJobItems";
@@ -36,7 +33,8 @@ import { requestSaveJobItems } from "#/api/jobs/requestSaveJobItems";
 import type { JobItemInput } from "#/api/jobs/requestSaveJobItems";
 import { useClickOutside } from "#/hooks/useClickOutside";
 import { GenericError } from "#/utils/GenericError";
-import { formatDate } from "#/utils/format";
+import { formatDate, toDateInputValue } from "#/utils/format";
+import { getTotalPrice } from "#/utils/getTotalPrice";
 import {
   jobFormModalTitleSx,
   jobFormModalPaperSx,
@@ -77,6 +75,7 @@ type JobFormModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (values: NewJob) => Promise<string | undefined>;
+  onDelete?: (jobId: string) => void;
   job?: JobType | null;
   isSubmitting?: boolean;
 };
@@ -109,7 +108,7 @@ const jobToFormValues = (job?: JobType | null): JobFormValues => {
     address: job.address,
     client_name: job.client_name,
     phone: job.phone,
-    date: job.date,
+    date: toDateInputValue(job.date),
     date_finished: job.date_finished ?? "",
     notes: job.notes ?? "",
   };
@@ -119,12 +118,14 @@ type NumberStepperFieldProps = {
   label: string;
   value: string;
   onValueChange: (value: string) => void;
+  unit?: string;
 };
 
 const NumberStepperField = ({
   label,
   value,
   onValueChange,
+  unit,
 }: NumberStepperFieldProps) => {
   const onChange = (event: ChangeEvent<HTMLInputElement>) => {
     onValueChange(event.target.value);
@@ -144,23 +145,30 @@ const NumberStepperField = ({
         htmlInput: { min: 0 },
         input: {
           endAdornment: (
-            <Stack sx={jobFormModalStepperButtonsSx}>
-              <IconButton
-                size="small"
-                onClick={onStep(1)}
-                sx={jobFormModalStepperButtonSx}
-                aria-label={`Povećaj: ${label}`}
-              >
-                <KeyboardArrowUp fontSize="inherit" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={onStep(-1)}
-                sx={jobFormModalStepperButtonSx}
-                aria-label={`Smanji: ${label}`}
-              >
-                <KeyboardArrowDown fontSize="inherit" />
-              </IconButton>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+              {unit && (
+                <Typography variant="body2" color="text.secondary">
+                  {unit}
+                </Typography>
+              )}
+              <Stack sx={jobFormModalStepperButtonsSx}>
+                <IconButton
+                  size="small"
+                  onClick={onStep(1)}
+                  sx={jobFormModalStepperButtonSx}
+                  aria-label={`Povećaj: ${label}`}
+                >
+                  <KeyboardArrowUp fontSize="inherit" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={onStep(-1)}
+                  sx={jobFormModalStepperButtonSx}
+                  aria-label={`Smanji: ${label}`}
+                >
+                  <KeyboardArrowDown fontSize="inherit" />
+                </IconButton>
+              </Stack>
             </Stack>
           ),
         },
@@ -202,6 +210,8 @@ const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
       }),
     }));
 
+    const totalPrice = getTotalPrice(squareMeters, pricePerM2);
+
     return (
       <Stack spacing={2}>
         <Autocomplete
@@ -217,19 +227,39 @@ const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
             label="Kvadratura (m²)"
             value={squareMeters}
             onValueChange={setSquareMeters}
+            unit="m²"
           />
           <NumberStepperField
             label="Cijena po m²"
             value={pricePerM2}
             onValueChange={setPricePerM2}
+            unit="€"
           />
         </Stack>
 
-        <NumberStepperField
-          label="Trošak materijala"
-          value={materialCost}
-          onValueChange={setMaterialCost}
-        />
+        <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
+          <NumberStepperField
+            label="Trošak materijala"
+            value={materialCost}
+            onValueChange={setMaterialCost}
+            unit="€"
+          />
+          <TextField
+            label="Ukupna cijena"
+            value={String(totalPrice)}
+            disabled
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <Typography variant="body2" color="text.secondary">
+                    €
+                  </Typography>
+                ),
+              },
+            }}
+            fullWidth
+          />
+        </Stack>
       </Stack>
     );
   },
@@ -241,6 +271,7 @@ const JobFormModal = ({
   open,
   onClose,
   onSubmit,
+  onDelete,
   job,
   isSubmitting,
 }: JobFormModalProps) => {
@@ -253,6 +284,7 @@ const JobFormModal = ({
   const [mode, setMode] = useState<ModalMode>(() => (job ? "view" : "edit"));
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const previewImageRef = useRef<HTMLImageElement>(null);
   const jobItemsFieldsRef = useRef<JobItemsFieldsHandle>(null);
 
@@ -345,11 +377,6 @@ const JobFormModal = ({
     event.target.value = "";
 
     if (!file || !job) return;
-
-    if (file.size > MAX_JOB_PHOTO_SIZE_BYTES) {
-      setPhotoError("Fotografija mora biti manja od 1MB.");
-      return;
-    }
 
     setPhotoError(null);
     addPhotoMutation.mutate(file);
@@ -445,6 +472,20 @@ const JobFormModal = ({
     setMode("view");
   };
 
+  const onDeleteClick = () => {
+    if (!job || !onDelete) return;
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const onCancelDelete = () => {
+    setIsDeleteConfirmOpen(false);
+  };
+
+  const onConfirmDelete = () => {
+    setIsDeleteConfirmOpen(false);
+    if (job && onDelete) onDelete(job.id);
+  };
+
   const modalTitle = isNewJob
     ? "Novi posao"
     : isViewMode
@@ -473,7 +514,14 @@ const JobFormModal = ({
                 <Typography variant="caption" sx={jobDetailLabelSx}>
                   {field.label}
                 </Typography>
-                <Typography variant="body1" sx={jobDetailValueSx}>
+                <Typography
+                  variant="body1"
+                  sx={
+                    field.isDate
+                      ? { ...jobDetailValueSx, textTransform: "capitalize" }
+                      : jobDetailValueSx
+                  }
+                >
                   {field.isDate
                     ? formatDate(values[field.key] || null)
                     : values[field.key] || (field.emptyFallback ?? "-")}
@@ -578,7 +626,9 @@ const JobFormModal = ({
                     Kvadratura (m²)
                   </Typography>
                   <Typography variant="body1" sx={jobDetailValueSx}>
-                    {jobItemDefaults.square_meters || "-"}
+                    {jobItemDefaults.square_meters
+                      ? `${jobItemDefaults.square_meters} m²`
+                      : "-"}
                   </Typography>
                 </Stack>
                 <Stack>
@@ -586,18 +636,37 @@ const JobFormModal = ({
                     Cijena po m²
                   </Typography>
                   <Typography variant="body1" sx={jobDetailValueSx}>
-                    {jobItemDefaults.price_per_m2 || "-"}
+                    {jobItemDefaults.price_per_m2
+                      ? `${jobItemDefaults.price_per_m2} €`
+                      : "-"}
                   </Typography>
                 </Stack>
               </Stack>
 
-              <Stack>
-                <Typography variant="caption" sx={jobDetailLabelSx}>
-                  Trošak materijala
-                </Typography>
-                <Typography variant="body1" sx={jobDetailValueSx}>
-                  {jobItemDefaults.material_cost || "-"}
-                </Typography>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                sx={jobFormModalRowSx}
+              >
+                <Stack>
+                  <Typography variant="caption" sx={jobDetailLabelSx}>
+                    Trošak materijala
+                  </Typography>
+                  <Typography variant="body1" sx={jobDetailValueSx}>
+                    {jobItemDefaults.material_cost
+                      ? `${jobItemDefaults.material_cost} €`
+                      : "-"}
+                  </Typography>
+                </Stack>
+                <Stack>
+                  <Typography variant="caption" sx={jobDetailLabelSx}>
+                    Ukupna cijena
+                  </Typography>
+                  <Typography variant="body1" sx={jobDetailValueSx}>
+                    {jobItemDefaults.square_meters && jobItemDefaults.price_per_m2
+                      ? `${getTotalPrice(jobItemDefaults.square_meters, jobItemDefaults.price_per_m2)} €`
+                      : "-"}
+                  </Typography>
+                </Stack>
               </Stack>
             </Stack>
           ) : (
@@ -683,29 +752,39 @@ const JobFormModal = ({
       </DialogContent>
 
       <DialogActions sx={jobFormModalActionsSx}>
-        {isViewMode ? (
-          <>
-            <Button onClick={onClose} sx={jobFormModalCancelButtonSx}>
-              Zatvori
+        <Box>
+          {!isNewJob && onDelete && (
+            <Button onClick={onDeleteClick} color="error">
+              Obriši
             </Button>
-            <Button variant="contained" onClick={onEnterEditMode}>
-              Uredi
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button onClick={onCancelEdit} sx={jobFormModalCancelButtonSx}>
-              Odustani
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isNewJob ? "Dodaj" : "Spremi"}
-            </Button>
-          </>
-        )}
+          )}
+        </Box>
+
+        <Stack direction="row" spacing={1}>
+          {isViewMode ? (
+            <>
+              <Button onClick={onClose} sx={jobFormModalCancelButtonSx}>
+                Zatvori
+              </Button>
+              <Button variant="contained" onClick={onEnterEditMode}>
+                Uredi
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={onCancelEdit} sx={jobFormModalCancelButtonSx}>
+                Odustani
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isNewJob ? "Dodaj" : "Spremi"}
+              </Button>
+            </>
+          )}
+        </Stack>
       </DialogActions>
 
       <Dialog
@@ -749,6 +828,24 @@ const JobFormModal = ({
             )}
           </Box>
         )}
+      </Dialog>
+
+      <Dialog open={isDeleteConfirmOpen} onClose={onCancelDelete} maxWidth="xs" fullWidth>
+        <DialogTitle sx={jobFormModalTitleSx}>Obriši posao</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Jeste li sigurni da želite obrisati posao "{job?.address}"? Ova radnja
+            se ne može poništiti.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onCancelDelete} sx={jobFormModalCancelButtonSx}>
+            Odustani
+          </Button>
+          <Button variant="contained" color="error" onClick={onConfirmDelete}>
+            Obriši
+          </Button>
+        </DialogActions>
       </Dialog>
     </Dialog>
   );

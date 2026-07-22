@@ -75,6 +75,7 @@ export const jobFormModalStepperButtonSx: SxProps<Theme> = {
 export const jobFormModalActionsSx: SxProps<Theme> = {
   px: 3,
   pb: 3,
+  justifyContent: "space-between",
 };
 
 export const jobFormModalCancelButtonSx: SxProps<Theme> = {
