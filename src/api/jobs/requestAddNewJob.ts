@@ -1,8 +1,6 @@
 import supabase from "#/config/supabaseClientVite";
-import type { JobType } from "#/types/Job.type";
 import { handleSupabaseError } from "#/lib/handleSupabaseError";
-
-export type NewJob = Omit<JobType, "id" | "created_at">;
+import type { NewJob } from "#/types/Job.type";
 
 export const requestAddNewJob = async (job: NewJob) => {
   const response = await supabase
