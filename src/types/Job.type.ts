@@ -9,3 +9,7 @@ export type JobType = {
   date_started: string;
   date_finished: string | null;
 };
+
+export type EditedJob = Omit<JobType, "id" | "created_at">;
+
+export type NewJob = Omit<JobType, "id" | "created_at">;
