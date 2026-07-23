@@ -5,17 +5,19 @@ import { useNavigate } from "react-router-dom";
 import * as v from "valibot";
 import type { LoginScheme } from "../loginScheme";
 import { isAuthApiError } from "@supabase/supabase-js";
+import type { Credentials } from "#/types/Credentials.type";
+import type { Handler } from "#/types/Handler.type";
 
 export const useAuth = (
-  handler,
-  authScheme?: typeof LoginScheme,
+  handler: Handler,
+  authScheme: typeof LoginScheme,
 ) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [data, setData] = useState();
   const [error, setError] = useState<string>();
   const navigate = useNavigate();
 
-  const LocalErrorValidator = (credentials: CredentialsType) => {
+  const LocalErrorValidator = (credentials: Credentials) => {
     const response = v.parse(authScheme, credentials);
     return response;
   };
@@ -27,7 +29,7 @@ export const useAuth = (
     }, 5000);
   };
 
-  const handleAuth = async (credentials) => {
+  const handleAuth = async (credentials: Credentials) => {
     setIsLoading(true);
     try {
       if(credentials != null) LocalErrorValidator(credentials);
