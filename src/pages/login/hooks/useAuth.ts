@@ -13,7 +13,7 @@ export const useAuth = (
   authScheme: typeof LoginScheme,
 ) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [data, setData] = useState();
+  const [data, setData] = useState<unknown>();
   const [error, setError] = useState<string>();
   const navigate = useNavigate();
 
