@@ -1,86 +1,145 @@
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Stack,
-  Typography,
-} from "@mui/material";
-import StatCard from "./components/StatCard";
-import EarningsByServiceChart from "./components/EarningsByServiceChart";
-import RecentJobsTable from "./components/RecentJobsTable";
-import { formatCurrency } from "#/utils/format";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { Box, CircularProgress, Stack, Typography } from "@mui/material";
+import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
+import Inventory2RoundedIcon from "@mui/icons-material/Inventory2Rounded";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import WorkOutlineRoundedIcon from "@mui/icons-material/WorkOutlineRounded";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchDashboardData } from "#/api/dashboard/dashboard";
+import { formatCurrency } from "#/utils/format";
+import { getPeriodRange } from "./period";
+import type { PeriodType } from "./period";
+import StatCard from "./components/StatCard";
+import ProfitDonut from "./components/ProfitDonut";
+import EarningsByServiceChart from "./components/EarningsByServiceChart";
+import DashboardJobsList from "./components/DashboardJobsList";
+import PeriodFilter from "./components/PeriodFilter";
 import {
+  STAT_ACCENTS,
   dashboardLoadingSx,
   dashboardHeaderSx,
   dashboardTitleSx,
-  dashboardButtonSx,
+  dashboardPeriodLabelSx,
   dashboardStatsRowSx,
+  dashboardPanelsRowSx,
 } from "./dashboardConfig";
 
 const Dashboard = () => {
+  const [period, setPeriod] = useState<PeriodType>("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const range = useMemo(
+    () =>
+      getPeriodRange(period, {
+        from: customFrom ? new Date(customFrom) : undefined,
+        to: customTo ? new Date(customTo) : undefined,
+      }),
+    [period, customFrom, customTo],
+  );
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: fetchDashboardData,
+    queryKey: [
+      "dashboard",
+      period,
+      range.from.toISOString(),
+      range.to.toISOString(),
+    ],
+    queryFn: () => fetchDashboardData(range),
+    placeholderData: keepPreviousData,
   });
 
-  if (isLoading) {
-    return (
-      <Box sx={dashboardLoadingSx}>
-        <CircularProgress size={120} />
+  const header = (
+    <Stack
+      direction={{ xs: "column", md: "row" }}
+      spacing={2}
+      sx={dashboardHeaderSx}
+    >
+      <Box>
+        <Typography variant="h5" sx={dashboardTitleSx}>
+          Pregled poslovanja
+        </Typography>
+        <Typography sx={dashboardPeriodLabelSx}>{range.label}</Typography>
       </Box>
+      <PeriodFilter
+        period={period}
+        onPeriodChange={setPeriod}
+        customFrom={customFrom}
+        customTo={customTo}
+        onCustomFromChange={setCustomFrom}
+        onCustomToChange={setCustomTo}
+      />
+    </Stack>
+  );
+
+  if (isLoading && !data) {
+    return (
+      <Stack spacing={3}>
+        {header}
+        <Box sx={dashboardLoadingSx}>
+          <CircularProgress size={120} />
+        </Box>
+      </Stack>
     );
   }
 
   if (isError) {
     return (
-      <Typography color="error">
-        Nešto je pošlo po krivu prilikom učitavanja podataka.
-      </Typography>
+      <Stack spacing={3}>
+        {header}
+        <Typography color="error">
+          Nešto je pošlo po krivu prilikom učitavanja podataka.
+        </Typography>
+      </Stack>
     );
   }
 
+  if (!data) return null;
+
   return (
     <Stack spacing={3}>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={dashboardHeaderSx}
-      >
-        <Box>
-          <Typography variant="h5" sx={dashboardTitleSx}>
-            Dobar dan, {data?.userName}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {data?.period}
-          </Typography>
-        </Box>
-        <Button variant="outlined" sx={dashboardButtonSx}>
-          Ovaj mjesec
-        </Button>
-      </Stack>
+      {header}
 
-      <Box sx={dashboardStatsRowSx}>
-        <StatCard
-          label="Ukupna zarada"
-          value={formatCurrency(data.totalEarnings)}
-        />
-        <StatCard
-          label="Trošak materijala"
-          value={formatCurrency(data.materialCost)}
-        />
-        <StatCard
-          label="Neto profit"
-          value={formatCurrency(data.netProfit)}
-          emphasizeAsProfit
-        />
-        <StatCard label="Broj poslova" value={String(data.jobsCount)} />
-      </Box>
+      <Stack spacing={2}>
+        <Box sx={dashboardStatsRowSx}>
+            <StatCard
+              label="Ukupni prihod"
+              value={formatCurrency(data.totalIncome)}
+              icon={PaymentsRoundedIcon}
+              accent={STAT_ACCENTS.income}
+            />
+            <StatCard
+              label="Trošak materijala"
+              value={formatCurrency(data.materialCost)}
+              icon={Inventory2RoundedIcon}
+              accent={STAT_ACCENTS.material}
+            />
+            <StatCard
+              label="Neto dobit"
+              value={formatCurrency(data.netProfit)}
+              icon={TrendingUpRoundedIcon}
+              accent={STAT_ACCENTS.profit}
+            />
+            <StatCard
+              label="Broj poslova"
+              value={String(data.jobsCount)}
+              icon={WorkOutlineRoundedIcon}
+              accent={STAT_ACCENTS.jobs}
+            />
+          </Box>
 
-      <EarningsByServiceChart data={data.earningsByService} />
+          <Box sx={dashboardPanelsRowSx}>
+            <ProfitDonut
+              totalIncome={data.totalIncome}
+              materialCost={data.materialCost}
+              netProfit={data.netProfit}
+              profitMargin={data.profitMargin}
+            />
+            <EarningsByServiceChart data={data.earningsByService} />
+          </Box>
 
-      <RecentJobsTable jobs={data.recentJobs} />
+          <DashboardJobsList jobs={data.jobs} />
+        </Stack>
     </Stack>
   );
 };

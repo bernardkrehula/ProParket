@@ -1,3 +1,7 @@
+import supabase from "#/config/supabaseClientVite";
+import { chartColors } from "#/theme/theme";
+import type { PeriodRange } from "#/pages/dashboard/period";
+
 export type ServiceEarning = {
   id: string;
   label: string;
@@ -5,77 +9,165 @@ export type ServiceEarning = {
   color: string;
 };
 
-export type RecentJob = {
+export type DashboardJob = {
   id: string;
   address: string;
-  service: string;
-  serviceColor: string;
-  areaM2: number;
-  earnings: number;
-  cost: number;
-  profit: number;
+  client_name: string;
+  phone: string;
+  date: string;
+  /** Σ square_meters × price_per_m2 across this job's items. */
+  price: number;
 };
 
-export type DashboardData = {
-  userName: string;
-  period: string;
-  totalEarnings: number;
+export type DashboardSummary = {
+  /** Σ square_meters × price_per_m2 over job_items in range. */
+  totalIncome: number;
+  /** Σ material_cost over job_items in range. */
   materialCost: number;
+  /** totalIncome − materialCost. */
   netProfit: number;
+  /** netProfit / totalIncome, in [−∞, 1]; 0 when there is no income. */
+  profitMargin: number;
+  /** Count of jobs whose date falls in range. */
   jobsCount: number;
+  /** Income grouped by service, largest first, zero-income services dropped. */
   earningsByService: ServiceEarning[];
-  recentJobs: RecentJob[];
+  /** Jobs whose date falls in range, with their total price. */
+  jobs: DashboardJob[];
 };
 
-const FAKE_DASHBOARD_DATA: DashboardData = {
-  userName: "Ivan",
-  period: "Srpanj 2026.",
-  totalEarnings: 12450,
-  materialCost: 3200,
-  netProfit: 9250,
-  jobsCount: 18,
-  earningsByService: [
-    { id: "brusenje", label: "Brušenje", amount: 3100, color: "#7c83f0" },
-    { id: "poliranje", label: "Poliranje", amount: 2400, color: "#22b389" },
-    { id: "parket", label: "Parket", amount: 4950, color: "#ef6c3b" },
-    { id: "laminat", label: "Laminat", amount: 2000, color: "#e0428a" },
-  ],
-  recentJobs: [
-    {
-      id: "1",
-      address: "Ilica 42, Zagreb",
-      service: "Parket",
-      serviceColor: "#ef6c3b",
-      areaM2: 45,
-      earnings: 2250,
-      cost: 680,
-      profit: 1570,
-    },
-    {
-      id: "2",
-      address: "Vukovarska 15, Split",
-      service: "Brušenje",
-      serviceColor: "#7c83f0",
-      areaM2: 60,
-      earnings: 1800,
-      cost: 200,
-      profit: 1600,
-    },
-    {
-      id: "3",
-      address: "Selska cesta 8, Zagreb",
-      service: "Poliranje",
-      serviceColor: "#22b389",
-      areaM2: 45,
-      earnings: 900,
-      cost: 90,
-      profit: 810,
-    },
-  ],
+// Reuse the app's chart hues first, then extend for any further services.
+const SERVICE_PALETTE = [
+  chartColors.brusenje,
+  chartColors.poliranje,
+  chartColors.parket,
+  chartColors.laminat,
+  "#3b5bdb",
+  "#e0428a",
+  "#22c55e",
+  "#f59e0b",
+];
+
+const toDateStr = (date: Date) => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-// Swap this out for a Supabase query later; the async shape/return type stays the same.
-export const fetchDashboardData = async (): Promise<DashboardData> => {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  return FAKE_DASHBOARD_DATA;
+type JobItemRow = {
+  square_meters: number | string | null;
+  price_per_m2: number | string | null;
+  material_cost: number | string | null;
+  service_id: string | null;
+};
+
+type ServiceRow = { id: string; name: string };
+
+type JobRow = {
+  id: string;
+  address: string;
+  client_name: string;
+  phone: string;
+  date: string;
+};
+
+type JobPriceRow = {
+  job_id: string;
+  square_meters: number | string | null;
+  price_per_m2: number | string | null;
+};
+
+export const fetchDashboardData = async (
+  range: PeriodRange,
+): Promise<DashboardSummary> => {
+  const [itemsRes, servicesRes, jobsRes] = await Promise.all([
+    supabase
+      .from("job_items")
+      .select("square_meters, price_per_m2, material_cost, service_id")
+      .gte("created_at", range.from.toISOString())
+      .lt("created_at", range.to.toISOString()),
+    supabase.from("services").select("id, name"),
+    supabase
+      .from("jobs")
+      .select("id, address, client_name, phone, date")
+      .gte("date", toDateStr(range.from))
+      .lt("date", toDateStr(range.to))
+      .order("date", { ascending: false }),
+  ]);
+
+  if (itemsRes.error) throw itemsRes.error;
+  if (servicesRes.error) throw servicesRes.error;
+  if (jobsRes.error) throw jobsRes.error;
+
+  const items = (itemsRes.data ?? []) as JobItemRow[];
+  const services = (servicesRes.data ?? []) as ServiceRow[];
+  const jobRows = (jobsRes.data ?? []) as JobRow[];
+
+  // Total price per job, for the jobs list under the charts.
+  const priceByJob = new Map<string, number>();
+  if (jobRows.length > 0) {
+    const jobPricesRes = await supabase
+      .from("job_items")
+      .select("job_id, square_meters, price_per_m2")
+      .in(
+        "job_id",
+        jobRows.map((job) => job.id),
+      );
+    if (jobPricesRes.error) throw jobPricesRes.error;
+
+    for (const row of (jobPricesRes.data ?? []) as JobPriceRow[]) {
+      const price =
+        (Number(row.square_meters) || 0) * (Number(row.price_per_m2) || 0);
+      priceByJob.set(row.job_id, (priceByJob.get(row.job_id) ?? 0) + price);
+    }
+  }
+
+  const jobs: DashboardJob[] = jobRows.map((job) => ({
+    id: job.id,
+    address: job.address,
+    client_name: job.client_name,
+    phone: job.phone,
+    date: job.date,
+    price: priceByJob.get(job.id) ?? 0,
+  }));
+
+  let totalIncome = 0;
+  let materialCost = 0;
+  const incomeByService = new Map<string, number>();
+
+  for (const item of items) {
+    const income =
+      (Number(item.square_meters) || 0) * (Number(item.price_per_m2) || 0);
+    totalIncome += income;
+    materialCost += Number(item.material_cost) || 0;
+
+    if (item.service_id) {
+      incomeByService.set(
+        item.service_id,
+        (incomeByService.get(item.service_id) ?? 0) + income,
+      );
+    }
+  }
+
+  const netProfit = totalIncome - materialCost;
+  const profitMargin = totalIncome > 0 ? netProfit / totalIncome : 0;
+
+  const earningsByService: ServiceEarning[] = services
+    .map((service, index) => ({
+      id: service.id,
+      label: service.name,
+      amount: incomeByService.get(service.id) ?? 0,
+      color: SERVICE_PALETTE[index % SERVICE_PALETTE.length],
+    }))
+    .filter((service) => service.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
+
+  return {
+    totalIncome,
+    materialCost,
+    netProfit,
+    profitMargin,
+    jobsCount: jobs.length,
+    earningsByService,
+    jobs,
+  };
 };

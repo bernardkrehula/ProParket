@@ -1,24 +1,34 @@
-import { Paper, Typography } from "@mui/material";
-import { statCardRootSx, statCardValueSx } from "./statCardConfig";
+import { Box, Paper, Typography } from "@mui/material";
+import type { SvgIconComponent } from "@mui/icons-material";
+import type { StatAccent } from "#/pages/dashboard/dashboardConfig";
+import {
+  statCardRootSx,
+  statCardIconChipSx,
+  statCardIconSx,
+  statCardLabelSx,
+  statCardValueSx,
+  statCardHintSx,
+} from "./statCardConfig";
 
 type StatCardProps = {
   label: string;
   value: string;
-  emphasizeAsProfit?: boolean;
+  icon: SvgIconComponent;
+  accent: StatAccent;
+  hint?: string;
 };
 
-const StatCard = ({ label, value, emphasizeAsProfit }: StatCardProps) => {
+const StatCard = ({ label, value, icon: Icon, accent, hint }: StatCardProps) => {
   return (
-    <Paper variant="outlined" sx={statCardRootSx}>
-      <Typography variant="body2" color="textSecondary" gutterBottom>
-        {label}
-      </Typography>
-      <Typography
-        color={emphasizeAsProfit ? "success" : undefined}
-        sx={statCardValueSx}
-      >
-        {value}
-      </Typography>
+    <Paper variant="outlined" sx={statCardRootSx(accent)}>
+      <Box sx={statCardIconChipSx(accent)}>
+        <Icon sx={statCardIconSx} />
+      </Box>
+      <Box>
+        <Typography sx={statCardLabelSx}>{label}</Typography>
+        <Typography sx={statCardValueSx}>{value}</Typography>
+      </Box>
+      {hint ? <Typography sx={statCardHintSx}>{hint}</Typography> : null}
     </Paper>
   );
 };
