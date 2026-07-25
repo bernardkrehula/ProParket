@@ -30,16 +30,28 @@ import { getJobStatus, JOB_STATUS_LABELS } from "#/utils/getJobStatus";
 import type { JobStatus } from "#/utils/getJobStatus";
 import JobsTable from "./components/JobsTable";
 import JobFormModal from "./components/JobFormModal";
+import PeriodFilter from "#/pages/dashboard/components/PeriodFilter";
+import { getPeriodRange } from "#/pages/dashboard/period";
+import type { PeriodType } from "#/pages/dashboard/period";
 import {
   jobsLoadingSx,
   jobsHeaderSx,
   jobsTitleSx,
+  jobsSubtitleSx,
   jobsFiltersSx,
+  jobsFiltersGroupSx,
+  jobsPeriodFilterWrapSx,
   jobsSearchFieldSx,
   jobsStatusSelectSx,
+  getJobCountLabel,
   PAGE_SIZE,
   ALL_STATUSES,
 } from "./jobsConfig";
+
+const dateKeyOf = (date: Date) => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
 
 const Jobs = () => {
   const [search, setSearch] = useState("");
@@ -47,6 +59,9 @@ const Jobs = () => {
     typeof ALL_STATUSES | JobStatus
   >(ALL_STATUSES);
   const [page, setPage] = useState(1);
+  const [period, setPeriod] = useState<PeriodType>("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobType | null>(null);
 
@@ -62,10 +77,28 @@ const Jobs = () => {
     return data && "data" in data && data.data ? data.data : [];
   }, [data]);
 
+  const range = useMemo(
+    () =>
+      getPeriodRange(period, {
+        from: customFrom ? new Date(customFrom) : undefined,
+        to: customTo ? new Date(customTo) : undefined,
+      }),
+    [period, customFrom, customTo],
+  );
+
   const filteredJobs = useMemo(() => {
-    if (statusFilter === ALL_STATUSES) return jobs;
-    return jobs.filter((job) => getJobStatus(job) === statusFilter);
-  }, [jobs, statusFilter]);
+    const fromKey = dateKeyOf(range.from);
+    const toKey = dateKeyOf(range.to);
+
+    return jobs.filter((job) => {
+      // Range upper bound is exclusive; job.date is a "YYYY-MM-DD" string.
+      if (job.date < fromKey || job.date >= toKey) return false;
+      if (statusFilter !== ALL_STATUSES && getJobStatus(job) !== statusFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [jobs, statusFilter, range]);
 
   const pageCount = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -76,6 +109,8 @@ const Jobs = () => {
 
   const onJobSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    // Dashboard stats (job count, earnings) are a separate query — refresh them too.
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setIsModalOpen(false);
   };
 
@@ -114,6 +149,21 @@ const Jobs = () => {
 
   const onStatusFilterChange = (event: SelectChangeEvent) => {
     setStatusFilter(event.target.value as typeof ALL_STATUSES | JobStatus);
+    setPage(1);
+  };
+
+  const onPeriodChange = (next: PeriodType) => {
+    setPeriod(next);
+    setPage(1);
+  };
+
+  const onCustomFromChange = (value: string) => {
+    setCustomFrom(value);
+    setPage(1);
+  };
+
+  const onCustomToChange = (value: string) => {
+    setCustomTo(value);
     setPage(1);
   };
 
@@ -179,9 +229,14 @@ const Jobs = () => {
         spacing={2}
         sx={jobsHeaderSx}
       >
-        <Typography variant="h5" sx={jobsTitleSx}>
-          Svi poslovi
-        </Typography>
+        <Box>
+          <Typography variant="h5" sx={jobsTitleSx}>
+            Svi poslovi
+          </Typography>
+          <Typography sx={jobsSubtitleSx}>
+            {getJobCountLabel(filteredJobs.length)}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddRoundedIcon />}
@@ -191,40 +246,53 @@ const Jobs = () => {
         </Button>
       </Stack>
 
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={jobsFiltersSx}
-      >
-        <TextField
-          placeholder="Pretraži adresu..."
-          defaultValue={search}
-          onChange={handleSearchChange}
-          size="small"
-          sx={jobsSearchFieldSx}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-        <Select
-          value={statusFilter}
-          onChange={onStatusFilterChange}
-          size="small"
-          sx={jobsStatusSelectSx}
+      <Stack spacing={1.5} sx={jobsFiltersGroupSx}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={jobsFiltersSx}
         >
-          <MenuItem value={ALL_STATUSES}>Svi statusi</MenuItem>
-          <MenuItem value="new">{JOB_STATUS_LABELS.new}</MenuItem>
-          <MenuItem value="in_progress">
-            {JOB_STATUS_LABELS.in_progress}
-          </MenuItem>
-          <MenuItem value="completed">{JOB_STATUS_LABELS.completed}</MenuItem>
-        </Select>
+          <TextField
+            placeholder="Pretraži po adresi, imenu ili broju..."
+            defaultValue={search}
+            onChange={handleSearchChange}
+            size="small"
+            sx={jobsSearchFieldSx}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <Select
+            value={statusFilter}
+            onChange={onStatusFilterChange}
+            size="small"
+            sx={jobsStatusSelectSx}
+          >
+            <MenuItem value={ALL_STATUSES}>Svi statusi</MenuItem>
+            <MenuItem value="new">{JOB_STATUS_LABELS.new}</MenuItem>
+            <MenuItem value="in_progress">
+              {JOB_STATUS_LABELS.in_progress}
+            </MenuItem>
+            <MenuItem value="completed">{JOB_STATUS_LABELS.completed}</MenuItem>
+          </Select>
+        </Stack>
+
+        <Box sx={jobsPeriodFilterWrapSx}>
+          <PeriodFilter
+            period={period}
+            onPeriodChange={onPeriodChange}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomFromChange={onCustomFromChange}
+            onCustomToChange={onCustomToChange}
+          />
+        </Box>
       </Stack>
 
       <JobsTable
@@ -235,6 +303,12 @@ const Jobs = () => {
         onPrevPage={onPrevPage}
         onNextPage={onNextPage}
         onRowClick={onOpenEditJobModal}
+        onAddJob={onOpenAddJobModal}
+        hasFilters={
+          search.trim() !== "" ||
+          statusFilter !== ALL_STATUSES ||
+          jobs.length !== filteredJobs.length
+        }
         hasPrevPage={currentPage > 1}
         hasNextPage={currentPage < pageCount}
       />

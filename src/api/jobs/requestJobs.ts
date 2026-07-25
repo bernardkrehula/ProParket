@@ -9,8 +9,14 @@ export const requestJobs = async (search?: string) => {
 
   let response;
 
-  if (search) {
-    response = await query.ilike("address", `%${search}%`);
+  const term = search?.trim();
+  if (term) {
+    // Match address, client name or phone number. Commas and parentheses are
+    // the PostgREST `or` separators, so strip them from the user's term.
+    const safe = term.replace(/[(),]/g, " ");
+    response = await query.or(
+      `address.ilike.%${safe}%,client_name.ilike.%${safe}%,phone.ilike.%${safe}%`,
+    );
   } else {
     response = await query;
   }
