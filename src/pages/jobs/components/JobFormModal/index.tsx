@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent } from "react";
 import {
+  Alert,
   Autocomplete,
   Box,
   Button,
@@ -9,6 +10,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -16,24 +18,34 @@ import {
   useTheme,
 } from "@mui/material";
 import {
+  Add,
   ChevronLeft,
   ChevronRight,
+  DeleteOutlined,
   KeyboardArrowUp,
   KeyboardArrowDown,
   Close,
 } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { JobType } from "#/types/Job.type";
-import type { NewJob } from "#/api/jobs/requestAddNewJob";
+import type { JobType, NewJob } from "#/types/Job.type";
 import { requestAddJobPhoto } from "#/api/jobs/requestAddJobPhoto";
 import { requestJobPhotos } from "#/api/jobs/requestJobPhotos";
 import { requestDeleteJobPhoto } from "#/api/jobs/requestDeleteJobPhoto";
 import { requestJobItems } from "#/api/jobs/requestJobItems";
 import { requestSaveJobItems } from "#/api/jobs/requestSaveJobItems";
 import type { JobItemInput } from "#/api/jobs/requestSaveJobItems";
+import { requestServices } from "#/api/services/requestServices";
+import { MuiTelInput } from "mui-tel-input";
 import { useClickOutside } from "#/hooks/useClickOutside";
 import { GenericError } from "#/utils/GenericError";
-import { formatDate, toDateInputValue } from "#/utils/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatTime,
+  toDateInputValue,
+} from "#/utils/format";
+import { getJobStatus } from "#/utils/getJobStatus";
+import JobStatusPill from "#/pages/jobs/components/JobStatusPill";
 import { getTotalPrice } from "#/utils/getTotalPrice";
 import {
   jobFormModalTitleSx,
@@ -41,6 +53,7 @@ import {
   jobFormModalContentSx,
   jobFormModalRowSx,
   jobFormModalDateInputSx,
+  jobFormModalTimeInputSx,
   jobFormModalNumberInputSx,
   jobFormModalStepperButtonsSx,
   jobFormModalStepperButtonSx,
@@ -49,6 +62,21 @@ import {
   jobDetailLabelSx,
   jobDetailValueSx,
   jobItemSectionSx,
+  jobRoomCardSx,
+  jobRoomHeaderSx,
+  jobRoomTitleSx,
+  jobRoomRemoveButtonSx,
+  jobRoomTotalRowSx,
+  jobRoomTotalLabelSx,
+  jobRoomTotalValueSx,
+  jobRoomViewTitleSx,
+  jobRoomViewServiceSx,
+  jobRoomViewMetaSx,
+  jobRoomViewTotalSx,
+  jobRoomAddButtonSx,
+  jobRoomsTotalBarSx,
+  jobRoomsTotalLabelSx,
+  jobRoomsTotalValueSx,
   jobPhotoSectionSx,
   jobPhotoActionsRowSx,
   jobPhotoGridSx,
@@ -64,9 +92,6 @@ import {
   jobPhotoPreviewCloseButtonSx,
   jobFormModalFieldsSx,
   EMPTY_JOB_FORM_VALUES,
-  JOB_SERVICE_OPTIONS,
-  JOB_SERVICE_ID_TO_NAME,
-  JOB_SERVICE_NAME_TO_ID,
 } from "./jobFormModalConfig";
 
 type JobFormValues = typeof EMPTY_JOB_FORM_VALUES;
@@ -85,6 +110,7 @@ type DetailField = {
   label: string;
   key: keyof JobFormValues;
   isDate?: boolean;
+  isTime?: boolean;
   emptyFallback?: string;
 };
 
@@ -93,6 +119,7 @@ const JOB_DETAIL_FIELDS: DetailField[] = [
   { label: "Klijent", key: "client_name" },
   { label: "Telefon", key: "phone" },
   { label: "Planirani datum", key: "date", isDate: true },
+  { label: "Vrijeme početka", key: "start_time", isTime: true },
   {
     label: "Datum završetka",
     key: "date_finished",
@@ -100,6 +127,14 @@ const JOB_DETAIL_FIELDS: DetailField[] = [
     emptyFallback: "U tijeku",
   },
   { label: "Napomena", key: "notes" },
+];
+
+const REQUIRED_FIELDS: { key: keyof JobFormValues; label: string }[] = [
+  { key: "address", label: "Adresa" },
+  { key: "client_name", label: "Klijent" },
+  { key: "phone", label: "Telefon" },
+  { key: "date", label: "Planirani datum" },
+  { key: "start_time", label: "Vrijeme početka" },
 ];
 
 const jobToFormValues = (job?: JobType | null): JobFormValues => {
@@ -110,6 +145,7 @@ const jobToFormValues = (job?: JobType | null): JobFormValues => {
     client_name: job.client_name,
     phone: job.phone,
     date: toDateInputValue(job.date),
+    start_time: job.start_time ?? "",
     date_finished: job.date_finished ?? "",
     notes: job.notes ?? "",
   };
@@ -180,86 +216,182 @@ const NumberStepperField = ({
   );
 };
 
-type JobItemsFieldsValues = {
-  services: string[];
+export type JobRoomFormItem = {
+  id: string;
+  room: string;
+  service: string;
   square_meters: string;
   price_per_m2: string;
   material_cost: string;
 };
 
 export type JobItemsFieldsHandle = {
-  getValues: () => JobItemsFieldsValues;
+  getValues: () => JobRoomFormItem[];
 };
 
 type JobItemsFieldsProps = {
-  defaults: JobItemsFieldsValues;
+  defaults: JobRoomFormItem[];
 };
+
+const createEmptyRoom = (): JobRoomFormItem => ({
+  id:
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `room-${Math.random().toString(36).slice(2)}`,
+  room: "",
+  service: "",
+  square_meters: "",
+  price_per_m2: "",
+  material_cost: "",
+});
 
 const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
   ({ defaults }, ref) => {
-    const [services, setServices] = useState(defaults.services);
-    const [squareMeters, setSquareMeters] = useState(defaults.square_meters);
-    const [pricePerM2, setPricePerM2] = useState(defaults.price_per_m2);
-    const [materialCost, setMaterialCost] = useState(defaults.material_cost);
+    const [rooms, setRooms] = useState<JobRoomFormItem[]>(
+      defaults.length > 0 ? defaults : [createEmptyRoom()],
+    );
 
-    useImperativeHandle(ref, () => ({
-      getValues: () => ({
-        services,
-        square_meters: squareMeters,
-        price_per_m2: pricePerM2,
-        material_cost: materialCost,
-      }),
-    }));
+    // Default prices come from the price list (Cjenik); selecting a service
+    // fills that room's price per m² automatically.
+    const servicesQuery = useQuery({
+      queryKey: ["services"],
+      queryFn: requestServices,
+    });
 
-    const totalPrice = getTotalPrice(squareMeters, pricePerM2);
+    const { servicePriceByName, serviceNames } = useMemo(() => {
+      const response = servicesQuery.data;
+      const list =
+        response && "data" in response && response.data ? response.data : [];
+      const priceMap = new Map<string, number>();
+      const names: string[] = [];
+      list.forEach((service) => {
+        priceMap.set(service.name, Number(service.price_per_m2));
+        names.push(service.name);
+      });
+      return { servicePriceByName: priceMap, serviceNames: names };
+    }, [servicesQuery.data]);
+
+    useImperativeHandle(ref, () => ({ getValues: () => rooms }));
+
+    const updateRoom = (id: string, patch: Partial<JobRoomFormItem>) => {
+      setRooms((prev) =>
+        prev.map((room) => (room.id === id ? { ...room, ...patch } : room)),
+      );
+    };
+
+    const addRoom = () => setRooms((prev) => [...prev, createEmptyRoom()]);
+
+    const removeRoom = (id: string) =>
+      setRooms((prev) =>
+        prev.length > 1 ? prev.filter((room) => room.id !== id) : prev,
+      );
+
+    const handleServiceChange = (id: string, serviceName: string) => {
+      const price = servicePriceByName.get(serviceName);
+      updateRoom(id, {
+        service: serviceName,
+        ...(price != null ? { price_per_m2: String(price) } : {}),
+      });
+    };
+
+    const jobTotal = rooms.reduce(
+      (sum, room) => sum + getTotalPrice(room.square_meters, room.price_per_m2),
+      0,
+    );
 
     return (
       <Stack spacing={2}>
-        <Autocomplete
-          multiple
-          options={JOB_SERVICE_OPTIONS}
-          value={services}
-          onChange={(_event, newValue) => setServices(newValue)}
-          renderInput={(params) => <TextField {...params} label="Usluge" />}
-        />
+        {rooms.map((room, index) => (
+          <Box key={room.id} sx={jobRoomCardSx}>
+            <Stack direction="row" sx={jobRoomHeaderSx}>
+              <Typography sx={jobRoomTitleSx}>Prostorija {index + 1}</Typography>
+              {rooms.length > 1 && (
+                <IconButton
+                  size="small"
+                  aria-label={`Ukloni prostoriju ${index + 1}`}
+                  onClick={() => removeRoom(room.id)}
+                  sx={jobRoomRemoveButtonSx}
+                >
+                  <DeleteOutlined fontSize="small" />
+                </IconButton>
+              )}
+            </Stack>
 
-        <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
-          <NumberStepperField
-            label="Kvadratura (m²)"
-            value={squareMeters}
-            onValueChange={setSquareMeters}
-            unit="m²"
-          />
-          <NumberStepperField
-            label="Cijena po m²"
-            value={pricePerM2}
-            onValueChange={setPricePerM2}
-            unit="€"
-          />
-        </Stack>
+            <TextField
+              label="Naziv prostorije"
+              value={room.room}
+              onChange={(event) =>
+                updateRoom(room.id, { room: event.target.value })
+              }
+              placeholder="npr. Dnevni boravak"
+              fullWidth
+            />
 
-        <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
-          <NumberStepperField
-            label="Trošak materijala"
-            value={materialCost}
-            onValueChange={setMaterialCost}
-            unit="€"
-          />
-          <TextField
-            label="Ukupna cijena"
-            value={String(totalPrice)}
-            disabled
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <Typography variant="body2" color="text.secondary">
-                    €
-                  </Typography>
-                ),
-              },
-            }}
-            fullWidth
-          />
+            <Autocomplete
+              options={serviceNames}
+              value={room.service || null}
+              onChange={(_event, value) =>
+                handleServiceChange(room.id, value ?? "")
+              }
+              renderInput={(params) => <TextField {...params} label="Usluga" />}
+            />
+
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              sx={jobFormModalRowSx}
+            >
+              <NumberStepperField
+                label="Kvadratura (m²)"
+                value={room.square_meters}
+                onValueChange={(value) =>
+                  updateRoom(room.id, { square_meters: value })
+                }
+                unit="m²"
+              />
+              <NumberStepperField
+                label="Cijena po m²"
+                value={room.price_per_m2}
+                onValueChange={(value) =>
+                  updateRoom(room.id, { price_per_m2: value })
+                }
+                unit="€"
+              />
+            </Stack>
+
+            <NumberStepperField
+              label="Trošak materijala"
+              value={room.material_cost}
+              onValueChange={(value) =>
+                updateRoom(room.id, { material_cost: value })
+              }
+              unit="€"
+            />
+
+            <Stack direction="row" sx={jobRoomTotalRowSx}>
+              <Typography sx={jobRoomTotalLabelSx}>Cijena prostorije</Typography>
+              <Typography sx={jobRoomTotalValueSx}>
+                {formatCurrency(
+                  getTotalPrice(room.square_meters, room.price_per_m2),
+                )}
+              </Typography>
+            </Stack>
+          </Box>
+        ))}
+
+        <Button
+          variant="outlined"
+          startIcon={<Add />}
+          onClick={addRoom}
+          sx={jobRoomAddButtonSx}
+        >
+          Dodaj prostoriju
+        </Button>
+
+        <Stack direction="row" sx={jobRoomsTotalBarSx}>
+          <Typography sx={jobRoomsTotalLabelSx}>Ukupna cijena posla</Typography>
+          <Typography sx={jobRoomsTotalValueSx}>
+            {formatCurrency(jobTotal)}
+          </Typography>
         </Stack>
       </Stack>
     );
@@ -284,6 +416,8 @@ const JobFormModal = ({
   );
   const [mode, setMode] = useState<ModalMode>(() => (job ? "view" : "edit"));
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const previewImageRef = useRef<HTMLImageElement>(null);
@@ -293,6 +427,26 @@ const JobFormModal = ({
   const isViewMode = mode === "view";
 
   const queryClient = useQueryClient();
+
+  // Services (with prices) are managed in the price list; map them for
+  // showing saved job items by name and for saving selections back by id.
+  const parentServicesQuery = useQuery({
+    queryKey: ["services"],
+    queryFn: requestServices,
+  });
+
+  const { serviceIdToName, serviceNameToId } = useMemo(() => {
+    const response = parentServicesQuery.data;
+    const list =
+      response && "data" in response && response.data ? response.data : [];
+    const idToName = new Map<string, string>();
+    const nameToId = new Map<string, string>();
+    list.forEach((service) => {
+      idToName.set(service.id, service.name);
+      nameToId.set(service.name, service.id);
+    });
+    return { serviceIdToName: idToName, serviceNameToId: nameToId };
+  }, [parentServicesQuery.data]);
 
   const photosQuery = useQuery({
     queryKey: ["jobPhotos", job?.id],
@@ -320,24 +474,26 @@ const JobFormModal = ({
     return response.data;
   }, [jobItemsQuery.data]);
 
-  const jobItemDefaults = useMemo(() => {
-    const services = Array.from(
-      new Set(
-        jobItems
-          .map((item) => JOB_SERVICE_ID_TO_NAME[item.service_id])
-          .filter((name): name is string => Boolean(name)),
+  const jobItemDefaults = useMemo<JobRoomFormItem[]>(() => {
+    return jobItems.map((item, index) => ({
+      id: item.id ?? `room-${index}`,
+      room: item.room ?? "",
+      service: serviceIdToName.get(item.service_id) ?? "",
+      square_meters: item.square_meters != null ? String(item.square_meters) : "",
+      price_per_m2: item.price_per_m2 != null ? String(item.price_per_m2) : "",
+      material_cost:
+        item.material_cost != null ? String(item.material_cost) : "",
+    }));
+  }, [jobItems, serviceIdToName]);
+
+  const jobTotalPrice = useMemo(
+    () =>
+      jobItemDefaults.reduce(
+        (sum, room) => sum + getTotalPrice(room.square_meters, room.price_per_m2),
+        0,
       ),
-    );
-
-    const firstItem = jobItems[0];
-
-    return {
-      services,
-      square_meters: firstItem ? String(firstItem.square_meters) : "",
-      price_per_m2: firstItem ? String(firstItem.price_per_m2) : "",
-      material_cost: firstItem ? String(firstItem.material_cost) : "",
-    };
-  }, [jobItems]);
+    [jobItemDefaults],
+  );
 
   const addPhotoMutation = useMutation({
     mutationFn: (photo: File) => {
@@ -370,6 +526,8 @@ const JobFormModal = ({
       requestSaveJobItems(payload.jobId, payload.items),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["jobItems", variables.jobId] });
+      // Job items drive the dashboard earnings/material figures.
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 
@@ -413,7 +571,23 @@ const JobFormModal = ({
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
+  const isFieldInvalid = (field: keyof JobFormValues) =>
+    showErrors && !values[field].trim();
+
+  const handlePhoneChange = (value: string) => {
+    setValues((prev) => ({ ...prev, phone: value }));
+  };
+
   const handleSubmit = async () => {
+    const missing = REQUIRED_FIELDS.filter((field) => !values[field.key].trim());
+    if (missing.length > 0) {
+      setShowErrors(true);
+      setValidationError(
+        `Molimo ispunite obavezna polja: ${missing.map((field) => field.label).join(", ")}.`,
+      );
+      return;
+    }
+
     const itemsValues = jobItemsFieldsRef.current?.getValues();
 
     let savedJobId: string | undefined;
@@ -425,6 +599,7 @@ const JobFormModal = ({
           client_name: values.client_name,
           phone: values.phone,
           date: values.date,
+          start_time: values.start_time || null,
           date_started: values.date,
           date_finished: null,
           notes: values.notes || null,
@@ -435,6 +610,7 @@ const JobFormModal = ({
           client_name: values.client_name,
           phone: values.phone,
           date: values.date,
+          start_time: values.start_time || null,
           date_started: values.date,
           date_finished: values.date_finished || null,
           notes: values.notes || null,
@@ -446,17 +622,68 @@ const JobFormModal = ({
 
     if (!savedJobId || !itemsValues) return;
 
-    const items: JobItemInput[] = itemsValues.services
-      .map((name) => JOB_SERVICE_NAME_TO_ID[name])
-      .filter((serviceId): serviceId is string => Boolean(serviceId))
-      .map((serviceId) => ({
-        service_id: serviceId,
-        square_meters: Number(itemsValues.square_meters) || 0,
-        price_per_m2: Number(itemsValues.price_per_m2) || 0,
-        material_cost: Number(itemsValues.material_cost) || 0,
-      }));
+    const items: JobItemInput[] = itemsValues
+      .map((room) => {
+        const serviceId = serviceNameToId.get(room.service);
+        if (!serviceId) return null;
+        return {
+          room: room.room.trim() || null,
+          service_id: serviceId,
+          square_meters: Number(room.square_meters) || 0,
+          price_per_m2: Number(room.price_per_m2) || 0,
+          material_cost: Number(room.material_cost) || 0,
+        };
+      })
+      .filter((item): item is JobItemInput => item !== null);
 
     saveJobItemsMutation.mutate({ jobId: savedJobId, items });
+  };
+
+  // Marks the job completed by stamping today as the finish date. Works even
+  // when today is before the planned date (a job can be finished early).
+  const handleMarkFinished = async () => {
+    const today = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+    try {
+      await onSubmit({
+        address: values.address,
+        client_name: values.client_name,
+        phone: values.phone,
+        date: values.date,
+        start_time: values.start_time || null,
+        date_started: values.date,
+        date_finished: todayStr,
+        notes: values.notes || null,
+      });
+    } catch {
+      return;
+    }
+  };
+
+  // Reopens a finished job as "U tijeku": clears the finish date and stamps the
+  // start as today, so the status isn't computed back to "Novo" for a job whose
+  // planned date is still in the future.
+  const handleReturnToProgress = async () => {
+    const today = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+    try {
+      await onSubmit({
+        address: values.address,
+        client_name: values.client_name,
+        phone: values.phone,
+        date: values.date,
+        start_time: values.start_time || null,
+        date_started: todayStr,
+        date_finished: null,
+        notes: values.notes || null,
+      });
+    } catch {
+      return;
+    }
   };
 
   const onEnterEditMode = () => {
@@ -505,7 +732,16 @@ const JobFormModal = ({
       fullScreen={isMobile}
       slotProps={{ paper: { sx: jobFormModalPaperSx } }}
     >
-      <DialogTitle sx={jobFormModalTitleSx}>{modalTitle}</DialogTitle>
+      <DialogTitle sx={jobFormModalTitleSx}>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{ alignItems: "center", justifyContent: "space-between" }}
+        >
+          <span>{modalTitle}</span>
+          {!isNewJob && job && <JobStatusPill status={getJobStatus(job)} />}
+        </Stack>
+      </DialogTitle>
 
       <DialogContent sx={jobFormModalContentSx}>
         {isViewMode ? (
@@ -525,7 +761,9 @@ const JobFormModal = ({
                 >
                   {field.isDate
                     ? formatDate(values[field.key] || null)
-                    : values[field.key] || (field.emptyFallback ?? "-")}
+                    : field.isTime
+                      ? formatTime(values[field.key] || null)
+                      : values[field.key] || (field.emptyFallback ?? "-")}
                 </Typography>
               </Stack>
             ))}
@@ -536,6 +774,9 @@ const JobFormModal = ({
               label="Adresa"
               value={values.address}
               onChange={handleChange("address")}
+              required
+              error={isFieldInvalid("address")}
+              helperText={isFieldInvalid("address") ? "Obavezno polje." : undefined}
               fullWidth
             />
 
@@ -547,12 +788,22 @@ const JobFormModal = ({
                 label="Klijent"
                 value={values.client_name}
                 onChange={handleChange("client_name")}
+                required
+                error={isFieldInvalid("client_name")}
+                helperText={
+                  isFieldInvalid("client_name") ? "Obavezno polje." : undefined
+                }
                 fullWidth
               />
-              <TextField
+              <MuiTelInput
                 label="Telefon"
                 value={values.phone}
-                onChange={handleChange("phone")}
+                onChange={handlePhoneChange}
+                defaultCountry="HR"
+                langOfCountryName="hr"
+                required
+                error={isFieldInvalid("phone")}
+                helperText={isFieldInvalid("phone") ? "Obavezno polje." : undefined}
                 fullWidth
               />
             </Stack>
@@ -566,22 +817,40 @@ const JobFormModal = ({
                 type="date"
                 value={values.date}
                 onChange={handleChange("date")}
+                required
+                error={isFieldInvalid("date")}
+                helperText={isFieldInvalid("date") ? "Obavezno polje." : undefined}
                 slotProps={{ inputLabel: { shrink: true } }}
                 sx={jobFormModalDateInputSx}
                 fullWidth
               />
-              {!isNewJob && (
-                <TextField
-                  label="Datum završetka"
-                  type="date"
-                  value={values.date_finished}
-                  onChange={handleChange("date_finished")}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  sx={jobFormModalDateInputSx}
-                  fullWidth
-                />
-              )}
+              <TextField
+                label="Vrijeme početka"
+                type="time"
+                value={values.start_time}
+                onChange={handleChange("start_time")}
+                required
+                error={isFieldInvalid("start_time")}
+                helperText={
+                  isFieldInvalid("start_time") ? "Obavezno polje." : undefined
+                }
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={jobFormModalTimeInputSx}
+                fullWidth
+              />
             </Stack>
+
+            {!isNewJob && (
+              <TextField
+                label="Datum završetka"
+                type="date"
+                value={values.date_finished}
+                onChange={handleChange("date_finished")}
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={jobFormModalDateInputSx}
+                fullWidth
+              />
+            )}
 
             <TextField
               label="Napomena"
@@ -606,70 +875,47 @@ const JobFormModal = ({
           )}
 
           {isViewMode ? (
-            <Stack spacing={2}>
-              <Stack>
-                <Typography variant="caption" sx={jobDetailLabelSx}>
-                  Usluge
-                </Typography>
-                <Typography variant="body1" sx={jobDetailValueSx}>
-                  {jobItemDefaults.services.length > 0
-                    ? jobItemDefaults.services.join(", ")
-                    : "-"}
-                </Typography>
-              </Stack>
+            jobItemDefaults.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                Nema stavki usluge.
+              </Typography>
+            ) : (
+              <Stack spacing={1.5}>
+                {jobItemDefaults.map((room, index) => (
+                  <Box key={room.id} sx={jobRoomCardSx}>
+                    <Stack direction="row" sx={jobRoomHeaderSx}>
+                      <Typography sx={jobRoomViewTitleSx}>
+                        {room.room || `Prostorija ${index + 1}`}
+                      </Typography>
+                      <Typography sx={jobRoomViewTotalSx}>
+                        {formatCurrency(
+                          getTotalPrice(room.square_meters, room.price_per_m2),
+                        )}
+                      </Typography>
+                    </Stack>
+                    <Typography sx={jobRoomViewServiceSx}>
+                      {room.service || "-"}
+                    </Typography>
+                    <Typography sx={jobRoomViewMetaSx}>
+                      {room.square_meters || 0} m² · {room.price_per_m2 || 0}{" "}
+                      €/m²
+                      {room.material_cost
+                        ? ` · materijal ${room.material_cost} €`
+                        : ""}
+                    </Typography>
+                  </Box>
+                ))}
 
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                sx={jobFormModalRowSx}
-              >
-                <Stack>
-                  <Typography variant="caption" sx={jobDetailLabelSx}>
-                    Kvadratura (m²)
+                <Stack direction="row" sx={jobRoomsTotalBarSx}>
+                  <Typography sx={jobRoomsTotalLabelSx}>
+                    Ukupna cijena posla
                   </Typography>
-                  <Typography variant="body1" sx={jobDetailValueSx}>
-                    {jobItemDefaults.square_meters
-                      ? `${jobItemDefaults.square_meters} m²`
-                      : "-"}
-                  </Typography>
-                </Stack>
-                <Stack>
-                  <Typography variant="caption" sx={jobDetailLabelSx}>
-                    Cijena po m²
-                  </Typography>
-                  <Typography variant="body1" sx={jobDetailValueSx}>
-                    {jobItemDefaults.price_per_m2
-                      ? `${jobItemDefaults.price_per_m2} €`
-                      : "-"}
+                  <Typography sx={jobRoomsTotalValueSx}>
+                    {formatCurrency(jobTotalPrice)}
                   </Typography>
                 </Stack>
               </Stack>
-
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                sx={jobFormModalRowSx}
-              >
-                <Stack>
-                  <Typography variant="caption" sx={jobDetailLabelSx}>
-                    Trošak materijala
-                  </Typography>
-                  <Typography variant="body1" sx={jobDetailValueSx}>
-                    {jobItemDefaults.material_cost
-                      ? `${jobItemDefaults.material_cost} €`
-                      : "-"}
-                  </Typography>
-                </Stack>
-                <Stack>
-                  <Typography variant="caption" sx={jobDetailLabelSx}>
-                    Ukupna cijena
-                  </Typography>
-                  <Typography variant="body1" sx={jobDetailValueSx}>
-                    {jobItemDefaults.square_meters && jobItemDefaults.price_per_m2
-                      ? `${getTotalPrice(jobItemDefaults.square_meters, jobItemDefaults.price_per_m2)} €`
-                      : "-"}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Stack>
+            )
           ) : (
             <JobItemsFields
               key={jobItemsQuery.dataUpdatedAt}
@@ -767,7 +1013,27 @@ const JobFormModal = ({
               <Button onClick={onClose} sx={jobFormModalCancelButtonSx}>
                 Zatvori
               </Button>
-              <Button variant="contained" onClick={onEnterEditMode}>
+              {!isNewJob &&
+                (values.date_finished ? (
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    onClick={handleReturnToProgress}
+                    disabled={isSubmitting}
+                  >
+                    Vrati u tijek
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    color="success"
+                    onClick={handleMarkFinished}
+                    disabled={isSubmitting}
+                  >
+                    Završi
+                  </Button>
+                ))}
+              <Button variant="outlined" onClick={onEnterEditMode}>
                 Uredi
               </Button>
             </>
@@ -858,6 +1124,22 @@ const JobFormModal = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(validationError)}
+        autoHideDuration={6000}
+        onClose={() => setValidationError(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity="error"
+          variant="filled"
+          onClose={() => setValidationError(null)}
+          sx={{ width: "100%" }}
+        >
+          {validationError}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 };
