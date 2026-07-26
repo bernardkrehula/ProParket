@@ -1,3 +1,5 @@
 import type { Credentials } from "./Credentials.type";
 
-export type Handler = (value?: Credentials) => Promise<any>;
+// Required credentials so password sign-in is assignable; a zero-arg handler
+// (e.g. anonymous demo login) still satisfies this.
+export type Handler = (value: Credentials) => Promise<unknown>;

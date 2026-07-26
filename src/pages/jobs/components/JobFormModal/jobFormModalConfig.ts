@@ -1,4 +1,5 @@
 import type { SxProps, Theme } from "@mui/material";
+import { LABEL_FONT, MONO_FONT } from "#/theme/tokens";
 
 export const jobFormModalTitleSx: SxProps<Theme> = {
   fontWeight: 700,
@@ -40,6 +41,15 @@ export const jobFormModalDateInputSx: SxProps<Theme> = {
     colorScheme: "dark",
   },
   "& input[type='date']::-webkit-calendar-picker-indicator": {
+    cursor: "pointer",
+  },
+};
+
+export const jobFormModalTimeInputSx: SxProps<Theme> = {
+  "& input[type='time']": {
+    colorScheme: "dark",
+  },
+  "& input[type='time']::-webkit-calendar-picker-indicator": {
     cursor: "pointer",
   },
 };
@@ -100,6 +110,137 @@ export const jobItemSectionSx: SxProps<Theme> = {
   pt: 1,
   borderTop: "1px solid",
   borderColor: "divider",
+};
+
+export const jobRoomCardSx: SxProps<Theme> = {
+  position: "relative",
+  display: "flex",
+  flexDirection: "column",
+  gap: 1.5,
+  p: 2,
+  pl: 2.25,
+  borderRadius: "10px",
+  border: "1px solid",
+  borderColor: "divider",
+  bgcolor: "rgba(255, 255, 255, 0.02)",
+  overflow: "hidden",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    bgcolor: "primary.main",
+  },
+};
+
+export const jobRoomHeaderSx: SxProps<Theme> = {
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 1,
+};
+
+export const jobRoomTitleSx: SxProps<Theme> = {
+  fontFamily: LABEL_FONT,
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  color: "text.secondary",
+};
+
+export const jobRoomRemoveButtonSx: SxProps<Theme> = {
+  color: "text.secondary",
+  mr: -0.5,
+  "&:hover": { color: "error.main", bgcolor: "rgba(244, 67, 54, 0.08)" },
+};
+
+export const jobRoomViewServiceSx: SxProps<Theme> = {
+  fontFamily: LABEL_FONT,
+  fontSize: 17,
+  fontWeight: 600,
+  color: "text.primary",
+  lineHeight: 1.3,
+};
+
+export const jobRoomViewMetaSx: SxProps<Theme> = {
+  fontFamily: MONO_FONT,
+  fontSize: 14.5,
+  letterSpacing: "-0.01em",
+  color: "text.secondary",
+};
+
+export const jobRoomViewTotalSx: SxProps<Theme> = {
+  fontFamily: MONO_FONT,
+  fontSize: 18,
+  fontWeight: 700,
+  letterSpacing: "-0.02em",
+  color: "text.primary",
+};
+
+export const jobRoomViewTitleSx: SxProps<Theme> = {
+  fontFamily: LABEL_FONT,
+  fontSize: 13,
+  fontWeight: 700,
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  color: "primary.light",
+};
+
+export const jobRoomTotalRowSx: SxProps<Theme> = {
+  alignItems: "center",
+  justifyContent: "space-between",
+  pt: 0.5,
+};
+
+export const jobRoomTotalLabelSx: SxProps<Theme> = {
+  fontSize: 13,
+  color: "text.secondary",
+};
+
+export const jobRoomTotalValueSx: SxProps<Theme> = {
+  fontFamily: MONO_FONT,
+  fontSize: 15,
+  fontWeight: 700,
+  letterSpacing: "-0.01em",
+  color: "text.primary",
+};
+
+export const jobRoomAddButtonSx: SxProps<Theme> = {
+  alignSelf: "flex-start",
+  textTransform: "none",
+  fontWeight: 600,
+  borderStyle: "dashed",
+  borderColor: "divider",
+  color: "text.secondary",
+};
+
+export const jobRoomsTotalBarSx: SxProps<Theme> = {
+  alignItems: "center",
+  justifyContent: "space-between",
+  p: 2,
+  borderRadius: "10px",
+  bgcolor: "rgba(59, 91, 219, 0.1)",
+  border: "1px solid",
+  borderColor: "rgba(59, 91, 219, 0.28)",
+};
+
+export const jobRoomsTotalLabelSx: SxProps<Theme> = {
+  fontFamily: LABEL_FONT,
+  fontSize: 13,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  color: "text.secondary",
+};
+
+export const jobRoomsTotalValueSx: SxProps<Theme> = {
+  fontFamily: MONO_FONT,
+  fontSize: 20,
+  fontWeight: 700,
+  letterSpacing: "-0.02em",
+  color: "text.primary",
 };
 
 export const jobPhotoActionsRowSx: SxProps<Theme> = {
@@ -207,28 +348,7 @@ export const EMPTY_JOB_FORM_VALUES = {
   client_name: "",
   phone: "",
   date: "",
+  start_time: "",
   date_finished: "",
   notes: "",
 };
-
-export const JOB_SERVICE_OPTIONS = [
-  "Brušenje",
-  "Postavljanje",
-  "Lakiranje",
-  "Parket",
-  "Laminat",
-  "Vinil",
-];
-
-export const JOB_SERVICE_ID_TO_NAME: Record<string, string> = {
-  "b2b2c3d4-0001-4b1b-9c1a-222222222222": "Brušenje",
-  "b2b2c3d4-0002-4b1b-9c1a-222222222222": "Lakiranje",
-  "b2b2c3d4-0003-4b1b-9c1a-222222222222": "Postavljanje",
-  "b2b2c3d4-0004-4b1b-9c1a-222222222222": "Parket",
-  "b2b2c3d4-0005-4b1b-9c1a-222222222222": "Laminat",
-  "b2b2c3d4-0006-4b1b-9c1a-222222222222": "Vinil",
-};
-
-export const JOB_SERVICE_NAME_TO_ID: Record<string, string> = Object.fromEntries(
-  Object.entries(JOB_SERVICE_ID_TO_NAME).map(([id, name]) => [name, id]),
-);

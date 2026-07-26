@@ -4,6 +4,8 @@ export type JobType = {
   client_name: string;
   phone: string;
   date: string;
+  /** Planned start time of day, stored as "HH:MM" (or null). */
+  start_time: string | null;
   notes: string | null;
   created_at: string;
   date_started: string;

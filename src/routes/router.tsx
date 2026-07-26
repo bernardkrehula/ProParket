@@ -1,8 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import MainLayout from "#/layouts/MainLayout";
-/* import Dashboard from "#/pages/dashboard";
- */import Jobs from "#/pages/jobs";
+import Dashboard from "#/pages/dashboard";
+import Jobs from "#/pages/jobs";
 import Schedule from "#/pages/schedule";
+import PriceList from "#/pages/priceList";
 import Login from "#/pages/login";
 import ComingSoon from "#/pages/ComingSoon";
 import PrivateRoutes from "#/routes/PrivateRoutes";
@@ -23,10 +24,10 @@ const router = createBrowserRouter([
         path: "/",
         element: <MainLayout />,
         children: [
-          { index: true, element: <Jobs /> },
+          {index: true, element: <Dashboard />},
           { path: "poslovi", element: <Jobs /> },
           { path: "raspored", element: <Schedule /> },
-          { path: "cjenik", element: <ComingSoon title="Cjenik" /> },
+          { path: "cjenik", element: <PriceList /> },
           { path: "postavke", element: <ComingSoon title="Postavke" /> },
         ],
       },

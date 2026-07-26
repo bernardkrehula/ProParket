@@ -4,8 +4,7 @@ import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
 import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import SellOutlinedIcon from "@mui/icons-material/SellOutlined";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { requestLogout } from "#/api/auth/requestLogout";
@@ -34,11 +33,10 @@ type NavbarProps = {
 };
 
 const navItems: NavItem[] = [
-/*   { label: "Nadzorna ploča", to: "/", icon: SpaceDashboardOutlinedIcon }, */
+  { label: "Nadzorna ploča", to: "/", icon: SpaceDashboardOutlinedIcon },
   { label: "Poslovi", to: "/poslovi", icon: WorkOutlineOutlinedIcon },
   { label: "Raspored", to: "/raspored", icon: CalendarMonthOutlinedIcon },
- /*  { label: "Cjenik", to: "/cjenik", icon: ApartmentOutlinedIcon },
-  { label: "Postavke", to: "/postavke", icon: SettingsOutlinedIcon }, */
+  { label: "Cjenik", to: "/cjenik", icon: SellOutlinedIcon },
 ];
 
 const Navbar = ({ onNavigate }: NavbarProps) => {
