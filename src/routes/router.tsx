@@ -3,10 +3,10 @@ import MainLayout from "#/layouts/MainLayout";
 import Dashboard from "#/pages/dashboard";
 import Jobs from "#/pages/jobs";
 import Schedule from "#/pages/schedule";
-import PriceList from "#/pages/priceList";
 import Login from "#/pages/login";
 import PrivateRoutes from "#/routes/PrivateRoutes";
 import PublicRoutes from "#/routes/PublicRoutes";
+import PriceList from "#/pages/priceList";
 
 const router = createBrowserRouter([
   {
