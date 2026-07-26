@@ -348,6 +348,7 @@ export const EMPTY_JOB_FORM_VALUES = {
   client_name: "",
   phone: "",
   date: "",
+  end_date: "",
   start_time: "",
   date_finished: "",
   notes: "",
