@@ -118,7 +118,8 @@ const JOB_DETAIL_FIELDS: DetailField[] = [
   { label: "Adresa", key: "address" },
   { label: "Klijent", key: "client_name" },
   { label: "Telefon", key: "phone" },
-  { label: "Planirani datum", key: "date", isDate: true },
+  { label: "Datum početka", key: "date", isDate: true },
+  { label: "Datum kraja", key: "end_date", isDate: true, emptyFallback: "-" },
   { label: "Vrijeme početka", key: "start_time", isTime: true },
   {
     label: "Datum završetka",
@@ -145,6 +146,7 @@ const jobToFormValues = (job?: JobType | null): JobFormValues => {
     client_name: job.client_name,
     phone: job.phone,
     date: toDateInputValue(job.date),
+    end_date: toDateInputValue(job.end_date),
     start_time: job.start_time ?? "",
     date_finished: job.date_finished ?? "",
     notes: job.notes ?? "",
@@ -599,6 +601,7 @@ const JobFormModal = ({
           client_name: values.client_name,
           phone: values.phone,
           date: values.date,
+          end_date: values.end_date || null,
           start_time: values.start_time || null,
           date_started: values.date,
           date_finished: null,
@@ -610,6 +613,7 @@ const JobFormModal = ({
           client_name: values.client_name,
           phone: values.phone,
           date: values.date,
+          end_date: values.end_date || null,
           start_time: values.start_time || null,
           date_started: values.date,
           date_finished: values.date_finished || null,
@@ -652,6 +656,7 @@ const JobFormModal = ({
         client_name: values.client_name,
         phone: values.phone,
         date: values.date,
+        end_date: values.end_date || null,
         start_time: values.start_time || null,
         date_started: values.date,
         date_finished: todayStr,
@@ -676,6 +681,7 @@ const JobFormModal = ({
         client_name: values.client_name,
         phone: values.phone,
         date: values.date,
+        end_date: values.end_date || null,
         start_time: values.start_time || null,
         date_started: todayStr,
         date_finished: null,
@@ -813,7 +819,7 @@ const JobFormModal = ({
               sx={jobFormModalRowSx}
             >
               <TextField
-                label="Planirani datum"
+                label="Datum početka"
                 type="date"
                 value={values.date}
                 onChange={handleChange("date")}
@@ -825,20 +831,34 @@ const JobFormModal = ({
                 fullWidth
               />
               <TextField
-                label="Vrijeme početka"
-                type="time"
-                value={values.start_time}
-                onChange={handleChange("start_time")}
-                required
-                error={isFieldInvalid("start_time")}
-                helperText={
-                  isFieldInvalid("start_time") ? "Obavezno polje." : undefined
-                }
-                slotProps={{ inputLabel: { shrink: true } }}
-                sx={jobFormModalTimeInputSx}
+                label="Datum kraja"
+                type="date"
+                value={values.end_date}
+                onChange={handleChange("end_date")}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  htmlInput: { min: values.date || undefined },
+                }}
+                helperText="Ostavi prazno za jednodnevni posao"
+                sx={jobFormModalDateInputSx}
                 fullWidth
               />
             </Stack>
+
+            <TextField
+              label="Vrijeme početka"
+              type="time"
+              value={values.start_time}
+              onChange={handleChange("start_time")}
+              required
+              error={isFieldInvalid("start_time")}
+              helperText={
+                isFieldInvalid("start_time") ? "Obavezno polje." : undefined
+              }
+              slotProps={{ inputLabel: { shrink: true } }}
+              sx={jobFormModalTimeInputSx}
+              fullWidth
+            />
 
             {!isNewJob && (
               <TextField

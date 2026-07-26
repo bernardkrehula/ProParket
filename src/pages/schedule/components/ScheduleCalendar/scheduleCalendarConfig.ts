@@ -135,3 +135,67 @@ export const calendarMoreSx: SxProps<Theme> = {
   color: "text.secondary",
   px: 0.625,
 };
+
+/* ---- Week rows with multi-day spanning bars ---- */
+
+export const calendarWeekSx: SxProps<Theme> = {
+  position: "relative",
+  display: "grid",
+  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+  gridAutoRows: "minmax(0, auto)",
+  rowGap: "3px",
+  minHeight: { xs: 78, sm: 106 },
+  pb: 0.5,
+};
+
+export const calendarDayBgSx = (
+  inMonth: boolean,
+  isLast: boolean,
+): SxProps<Theme> => ({
+  gridRow: "1 / -1",
+  borderRight: isLast ? 0 : "1px solid",
+  borderBottom: "1px solid",
+  borderColor: "divider",
+  bgcolor: inMonth ? "transparent" : "rgba(0, 0, 0, 0.18)",
+});
+
+export const calendarDayNumberCellSx: SxProps<Theme> = {
+  gridRow: 1,
+  display: "flex",
+  justifyContent: "flex-start",
+  p: 0.375,
+  pointerEvents: "none",
+};
+
+export const calendarBarSx = (
+  token: JobStatusToken,
+  continuesLeft: boolean,
+  continuesRight: boolean,
+): SxProps<Theme> => ({
+  minWidth: 0,
+  alignSelf: "start",
+  zIndex: 1,
+  ml: continuesLeft ? 0 : "3px",
+  mr: continuesRight ? 0 : "3px",
+  px: { xs: 0.5, sm: 0.625 },
+  py: 0.2,
+  fontFamily: LABEL_FONT,
+  fontSize: { xs: 10, sm: 10.5 },
+  fontWeight: 600,
+  lineHeight: 1.5,
+  bgcolor: token.bg,
+  color: token.fg,
+  borderLeft: continuesLeft ? 0 : "2px solid",
+  borderColor: token.rail,
+  borderTopLeftRadius: continuesLeft ? 0 : "4px",
+  borderBottomLeftRadius: continuesLeft ? 0 : "4px",
+  borderTopRightRadius: continuesRight ? 0 : "4px",
+  borderBottomRightRadius: continuesRight ? 0 : "4px",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  cursor: "pointer",
+  "@media (hover: hover)": {
+    "&:hover": { filter: "brightness(1.25)" },
+  },
+});
