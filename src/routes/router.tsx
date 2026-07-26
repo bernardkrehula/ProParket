@@ -6,7 +6,7 @@ import Schedule from "#/pages/schedule";
 import Login from "#/pages/login";
 import PrivateRoutes from "#/routes/PrivateRoutes";
 import PublicRoutes from "#/routes/PublicRoutes";
-import PriceList from "#/pages/priceList";
+import PriceList from "#/pages/priceList/index.tsx";
 
 const router = createBrowserRouter([
   {
