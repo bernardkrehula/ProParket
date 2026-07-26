@@ -5,7 +5,6 @@ import Jobs from "#/pages/jobs";
 import Schedule from "#/pages/schedule";
 import PriceList from "#/pages/priceList";
 import Login from "#/pages/login";
-import ComingSoon from "#/pages/ComingSoon";
 import PrivateRoutes from "#/routes/PrivateRoutes";
 import PublicRoutes from "#/routes/PublicRoutes";
 
@@ -14,7 +13,6 @@ const router = createBrowserRouter([
     element: <PublicRoutes />,
     children: [
       { path: "/login", element: <Login /> },
-      { path: "/sign-up", element: <ComingSoon title="Registracija" /> },
     ],
   },
   {
@@ -28,7 +26,6 @@ const router = createBrowserRouter([
           { path: "poslovi", element: <Jobs /> },
           { path: "raspored", element: <Schedule /> },
           { path: "cjenik", element: <PriceList /> },
-          { path: "postavke", element: <ComingSoon title="Postavke" /> },
         ],
       },
     ],
