@@ -216,6 +216,13 @@ export const jobRoomAddButtonSx: SxProps<Theme> = {
   color: "text.secondary",
 };
 
+export const jobServiceViewRowSx: SxProps<Theme> = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 0.25,
+  pt: 0.5,
+};
+
 export const jobRoomsTotalBarSx: SxProps<Theme> = {
   alignItems: "center",
   justifyContent: "space-between",
