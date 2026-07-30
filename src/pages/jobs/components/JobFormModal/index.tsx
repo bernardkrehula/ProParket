@@ -74,6 +74,7 @@ import {
   jobRoomViewMetaSx,
   jobRoomViewTotalSx,
   jobRoomAddButtonSx,
+  jobServiceViewRowSx,
   jobRoomsTotalBarSx,
   jobRoomsTotalLabelSx,
   jobRoomsTotalValueSx,
@@ -221,7 +222,8 @@ const NumberStepperField = ({
 export type JobRoomFormItem = {
   id: string;
   room: string;
-  service: string;
+  /** One room can have several services selected in the same input. */
+  services: string[];
   square_meters: string;
   price_per_m2: string;
   material_cost: string;
@@ -235,13 +237,15 @@ type JobItemsFieldsProps = {
   defaults: JobRoomFormItem[];
 };
 
+const createId = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+
 const createEmptyRoom = (): JobRoomFormItem => ({
-  id:
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `room-${Math.random().toString(36).slice(2)}`,
+  id: createId(),
   room: "",
-  service: "",
+  services: [],
   square_meters: "",
   price_per_m2: "",
   material_cost: "",
@@ -288,11 +292,16 @@ const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
         prev.length > 1 ? prev.filter((room) => room.id !== id) : prev,
       );
 
-    const handleServiceChange = (id: string, serviceName: string) => {
-      const price = servicePriceByName.get(serviceName);
+    // Selecting several services sums their price-list rates into this room's
+    // price per m², so the room total rises with each added service.
+    const handleServicesChange = (id: string, serviceNames: string[]) => {
+      const total = serviceNames.reduce(
+        (sum, name) => sum + (servicePriceByName.get(name) ?? 0),
+        0,
+      );
       updateRoom(id, {
-        service: serviceName,
-        ...(price != null ? { price_per_m2: String(price) } : {}),
+        services: serviceNames,
+        price_per_m2: total > 0 ? String(total) : "",
       });
     };
 
@@ -330,12 +339,19 @@ const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
             />
 
             <Autocomplete
+              multiple
               options={serviceNames}
-              value={room.service || null}
+              value={room.services}
               onChange={(_event, value) =>
-                handleServiceChange(room.id, value ?? "")
+                handleServicesChange(room.id, value)
               }
-              renderInput={(params) => <TextField {...params} label="Usluga" />}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Usluge"
+                  placeholder="Dodaj uslugu"
+                />
+              )}
             />
 
             <Stack
@@ -437,17 +453,23 @@ const JobFormModal = ({
     queryFn: requestServices,
   });
 
-  const { serviceIdToName, serviceNameToId } = useMemo(() => {
+  const { serviceIdToName, serviceNameToId, servicePriceByName } = useMemo(() => {
     const response = parentServicesQuery.data;
     const list =
       response && "data" in response && response.data ? response.data : [];
     const idToName = new Map<string, string>();
     const nameToId = new Map<string, string>();
+    const priceByName = new Map<string, number>();
     list.forEach((service) => {
       idToName.set(service.id, service.name);
       nameToId.set(service.name, service.id);
+      priceByName.set(service.name, Number(service.price_per_m2));
     });
-    return { serviceIdToName: idToName, serviceNameToId: nameToId };
+    return {
+      serviceIdToName: idToName,
+      serviceNameToId: nameToId,
+      servicePriceByName: priceByName,
+    };
   }, [parentServicesQuery.data]);
 
   const photosQuery = useQuery({
@@ -476,22 +498,61 @@ const JobFormModal = ({
     return response.data;
   }, [jobItemsQuery.data]);
 
+  // Flat job_items rows are grouped back into rooms by room name: a room's
+  // services collapse into one multi-select, its price per m² is the sum of the
+  // rows' rates, and its material cost the sum of the rows' material.
   const jobItemDefaults = useMemo<JobRoomFormItem[]>(() => {
-    return jobItems.map((item, index) => ({
-      id: item.id ?? `room-${index}`,
-      room: item.room ?? "",
-      service: serviceIdToName.get(item.service_id) ?? "",
-      square_meters: item.square_meters != null ? String(item.square_meters) : "",
-      price_per_m2: item.price_per_m2 != null ? String(item.price_per_m2) : "",
-      material_cost:
-        item.material_cost != null ? String(item.material_cost) : "",
-    }));
+    type Acc = {
+      id: string;
+      room: string;
+      services: string[];
+      square_meters: string;
+      priceSum: number;
+      materialSum: number;
+    };
+    const roomsByName = new Map<string, Acc>();
+    const order: string[] = [];
+
+    jobItems.forEach((item, index) => {
+      const roomName = item.room ?? "";
+      let room = roomsByName.get(roomName);
+      if (!room) {
+        room = {
+          id: `room-${index}`,
+          room: roomName,
+          services: [],
+          square_meters:
+            item.square_meters != null ? String(item.square_meters) : "",
+          priceSum: 0,
+          materialSum: 0,
+        };
+        roomsByName.set(roomName, room);
+        order.push(roomName);
+      }
+      const serviceName = serviceIdToName.get(item.service_id);
+      if (serviceName) room.services.push(serviceName);
+      room.priceSum += Number(item.price_per_m2) || 0;
+      room.materialSum += Number(item.material_cost) || 0;
+    });
+
+    return order.map((name) => {
+      const room = roomsByName.get(name)!;
+      return {
+        id: room.id,
+        room: room.room,
+        services: room.services,
+        square_meters: room.square_meters,
+        price_per_m2: room.priceSum > 0 ? String(room.priceSum) : "",
+        material_cost: room.materialSum > 0 ? String(room.materialSum) : "",
+      };
+    });
   }, [jobItems, serviceIdToName]);
 
   const jobTotalPrice = useMemo(
     () =>
       jobItemDefaults.reduce(
-        (sum, room) => sum + getTotalPrice(room.square_meters, room.price_per_m2),
+        (sum, room) =>
+          sum + getTotalPrice(room.square_meters, room.price_per_m2),
         0,
       ),
     [jobItemDefaults],
@@ -626,19 +687,31 @@ const JobFormModal = ({
 
     if (!savedJobId || !itemsValues) return;
 
-    const items: JobItemInput[] = itemsValues
-      .map((room) => {
-        const serviceId = serviceNameToId.get(room.service);
-        if (!serviceId) return null;
-        return {
-          room: room.room.trim() || null,
-          service_id: serviceId,
-          square_meters: Number(room.square_meters) || 0,
-          price_per_m2: Number(room.price_per_m2) || 0,
-          material_cost: Number(room.material_cost) || 0,
-        };
-      })
-      .filter((item): item is JobItemInput => item !== null);
+    const items: JobItemInput[] = itemsValues.flatMap((room) => {
+      const squareMeters = Number(room.square_meters) || 0;
+      const materialCost = Number(room.material_cost) || 0;
+
+      const rows = room.services
+        .map((serviceName) => {
+          const serviceId = serviceNameToId.get(serviceName);
+          if (!serviceId) return null;
+          return {
+            room: room.room.trim() || null,
+            service_id: serviceId,
+            square_meters: squareMeters,
+            // Each service is stored at its own price-list rate so per-service
+            // earnings stay correct; the room total is their sum × m².
+            price_per_m2: servicePriceByName.get(serviceName) ?? 0,
+            material_cost: 0,
+          };
+        })
+        .filter((item): item is JobItemInput => item !== null);
+
+      // Attach the room's material cost to a single row to avoid double-counting.
+      if (rows.length > 0) rows[0].material_cost = materialCost;
+
+      return rows;
+    });
 
     saveJobItemsMutation.mutate({ jobId: savedJobId, items });
   };
@@ -913,16 +986,20 @@ const JobFormModal = ({
                         )}
                       </Typography>
                     </Stack>
-                    <Typography sx={jobRoomViewServiceSx}>
-                      {room.service || "-"}
-                    </Typography>
-                    <Typography sx={jobRoomViewMetaSx}>
-                      {room.square_meters || 0} m² · {room.price_per_m2 || 0}{" "}
-                      €/m²
-                      {room.material_cost
-                        ? ` · materijal ${room.material_cost} €`
-                        : ""}
-                    </Typography>
+                    <Box sx={jobServiceViewRowSx}>
+                      <Typography sx={jobRoomViewServiceSx}>
+                        {room.services.length > 0
+                          ? room.services.join(", ")
+                          : "-"}
+                      </Typography>
+                      <Typography sx={jobRoomViewMetaSx}>
+                        {room.square_meters || 0} m² · {room.price_per_m2 || 0}{" "}
+                        €/m²
+                        {room.material_cost
+                          ? ` · materijal ${room.material_cost} €`
+                          : ""}
+                      </Typography>
+                    </Box>
                   </Box>
                 ))}
 
