@@ -56,6 +56,13 @@ export const formatTime = (value: string | null) => {
   return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}h`;
 };
 
+/** Today as "YYYY-MM-DD" in local time, ready for a date input or column. */
+export const todayInputValue = () => {
+  const today = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+};
+
 export const toDateInputValue = (value: string | null) => {
   if (!value) return "";
   const date = new Date(value);

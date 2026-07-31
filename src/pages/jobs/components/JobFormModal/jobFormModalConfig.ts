@@ -54,31 +54,10 @@ export const jobFormModalTimeInputSx: SxProps<Theme> = {
   },
 };
 
+/** Hiding the native spinners is NumberStepperField's job; this only themes it. */
 export const jobFormModalNumberInputSx: SxProps<Theme> = {
   "& input[type='number']": {
     colorScheme: "dark",
-    MozAppearance: "textfield",
-  },
-  "& input[type='number']::-webkit-inner-spin-button, & input[type='number']::-webkit-outer-spin-button":
-    {
-      WebkitAppearance: "none",
-      margin: 0,
-    },
-};
-
-export const jobFormModalStepperButtonsSx: SxProps<Theme> = {
-  mr: -1,
-};
-
-export const jobFormModalStepperButtonSx: SxProps<Theme> = {
-  p: 0,
-  height: 16,
-  width: 20,
-  borderRadius: 0.5,
-  color: "text.secondary",
-  "&:hover": {
-    color: "primary.main",
-    bgcolor: "action.hover",
   },
 };
 
@@ -360,3 +339,5 @@ export const EMPTY_JOB_FORM_VALUES = {
   date_finished: "",
   notes: "",
 };
+
+export type JobFormValues = typeof EMPTY_JOB_FORM_VALUES;
