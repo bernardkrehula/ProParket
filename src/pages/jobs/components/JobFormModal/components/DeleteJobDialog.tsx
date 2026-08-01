@@ -9,7 +9,7 @@ import {
 import {
   jobFormModalCancelButtonSx,
   jobFormModalTitleSx,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type DeleteJobDialogProps = {
   open: boolean;

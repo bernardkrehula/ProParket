@@ -11,11 +11,10 @@ import {
   jobPhotoPreviewNextButtonSx,
   jobPhotoPreviewPaperSx,
   jobPhotoPreviewPrevButtonSx,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobPhotoPreviewProps = {
   url?: string | null;
-  /** Arrows are hidden when there is nothing to page to. */
   hasMultiple: boolean;
   isMobile: boolean;
   onPrev: () => void;
@@ -23,7 +22,6 @@ type JobPhotoPreviewProps = {
   onClose: () => void;
 };
 
-/** Full-screen photo viewer with prev/next paging. */
 const JobPhotoPreview = ({
   url,
   hasMultiple,
@@ -36,10 +34,11 @@ const JobPhotoPreview = ({
 
   useClickOutside(imageRef, onClose, Boolean(url));
 
-  const stopAnd = (action: () => void) => (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    action();
-  };
+  const stopAnd =
+    (action: () => void) => (event: MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      action();
+    };
 
   return (
     <Dialog

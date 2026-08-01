@@ -2,13 +2,12 @@ import { Box, Button, DialogActions, Stack } from "@mui/material";
 import {
   jobFormModalActionsSx,
   jobFormModalCancelButtonSx,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobFormModalActionsProps = {
   isViewMode: boolean;
   isNewJob: boolean;
   isSubmitting?: boolean;
-  /** A saved job with a finish date is offered "Vrati u tijek" instead. */
   isFinished: boolean;
   canDelete: boolean;
   onClose: () => void;
@@ -78,7 +77,11 @@ const JobFormModalActions = ({
           <Button onClick={onCancelEdit} sx={jobFormModalCancelButtonSx}>
             Odustani
           </Button>
-          <Button variant="contained" onClick={onSubmit} disabled={isSubmitting}>
+          <Button
+            variant="contained"
+            onClick={onSubmit}
+            disabled={isSubmitting}
+          >
             {isNewJob ? "Dodaj" : "Spremi"}
           </Button>
         </>

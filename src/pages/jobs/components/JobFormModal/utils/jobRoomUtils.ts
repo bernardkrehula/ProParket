@@ -1,11 +1,15 @@
 import type { JobItemInput } from "#/api/jobs/requestSaveJobItems";
+import type { JobType } from "#/types/job.types.ts/Job.type";
+import { toDateInputValue } from "#/utils/format";
 import { getTotalPrice } from "#/utils/getTotalPrice";
+import {
+  EMPTY_JOB_FORM_VALUES,
+  type JobFormValues,
+} from "./jobFormModalConfig";
 
-/** One editable room in the job form; its services share the same m² and cost. */
 export type JobRoomFormItem = {
   id: string;
   room: string;
-  /** One room can have several services selected in the same input. */
   services: string[];
   square_meters: string;
   price_per_m2: string;
@@ -16,7 +20,6 @@ export type JobItemsFieldsHandle = {
   getValues: () => JobRoomFormItem[];
 };
 
-/** A stored `job_items` row: one service line of one room. */
 type JobItemRow = {
   room: string | null;
   service_id: string;
@@ -45,11 +48,6 @@ export const getRoomsTotal = (rooms: JobRoomFormItem[]) =>
     0,
   );
 
-/**
- * Flat job_items rows are grouped back into rooms by room name: a room's
- * services collapse into one multi-select, its price per m² is the sum of the
- * rows' rates, and its material cost the sum of the rows' material.
- */
 export const groupJobItemsIntoRooms = (
   items: JobItemRow[],
   serviceIdToName: Map<string, string>,
@@ -100,7 +98,6 @@ export const groupJobItemsIntoRooms = (
   });
 };
 
-/** Expands the form's rooms back into one job_items row per selected service. */
 export const roomsToJobItems = (
   rooms: JobRoomFormItem[],
   serviceNameToId: Map<string, string>,
@@ -118,16 +115,36 @@ export const roomsToJobItems = (
           room: room.room.trim() || null,
           service_id: serviceId,
           square_meters: squareMeters,
-          // Each service is stored at its own price-list rate so per-service
-          // earnings stay correct; the room total is their sum × m².
           price_per_m2: servicePriceByName.get(serviceName) ?? 0,
           material_cost: 0,
         };
       })
       .filter((item): item is JobItemInput => item !== null);
 
-    // Attach the room's material cost to a single row to avoid double-counting.
     if (rows.length > 0) rows[0].material_cost = materialCost;
 
     return rows;
   });
+
+export const jobToFormValues = (job?: JobType | null): JobFormValues => {
+  if (!job) return EMPTY_JOB_FORM_VALUES;
+
+  return {
+    address: job.address,
+    client_name: job.client_name,
+    phone: job.phone,
+    date: toDateInputValue(job.date),
+    end_date: toDateInputValue(job.end_date),
+    start_time: job.start_time ?? "",
+    date_finished: job.date_finished ?? "",
+    notes: job.notes ?? "",
+  };
+};
+
+export const REQUIRED_FIELDS: { key: keyof JobFormValues; label: string }[] = [
+  { key: "address", label: "Adresa" },
+  { key: "client_name", label: "Klijent" },
+  { key: "phone", label: "Telefon" },
+  { key: "date", label: "Planirani datum" },
+  { key: "start_time", label: "Vrijeme početka" },
+];

@@ -11,69 +11,40 @@ import {
   useTheme,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { JobType, NewJob } from "#/types/Job.type";
+import type { NewJob } from "#/types/job.types.ts/Job.type";
 import { requestJobItems } from "#/api/jobs/requestJobItems";
 import { requestSaveJobItems } from "#/api/jobs/requestSaveJobItems";
 import type { JobItemInput } from "#/api/jobs/requestSaveJobItems";
 import { useServices } from "#/hooks/useServices";
-import { toDateInputValue, todayInputValue } from "#/utils/format";
+import { todayInputValue } from "#/utils/format";
 import { getJobStatus } from "#/utils/getJobStatus";
 import JobStatusPill from "#/pages/jobs/components/JobStatusPill";
 import DeleteJobDialog from "./components/DeleteJobDialog";
 import JobDetailsView from "./components/JobDetailsView";
 import JobFormFields from "./components/JobFormFields";
 import JobFormModalActions from "./components/JobFormModalActions";
-import JobItemsFields from "./components/JobItemsFields";
-import JobPhotosSection from "./components/JobPhotosSection";
-import JobRoomsView from "./components/JobRoomsView";
+import JobItemsFields from "./components/rooms/JobItemsFields";
+import JobPhotosSection from "./components/photos/JobPhotosSection";
+import JobRoomsView from "./components/rooms/JobRoomsView";
 import {
   groupJobItemsIntoRooms,
+  jobToFormValues,
+  REQUIRED_FIELDS,
   roomsToJobItems,
   type JobItemsFieldsHandle,
-} from "./jobRoomUtils";
+} from "./utils/jobRoomUtils";
 import {
   jobDetailLabelSx,
   jobFormModalContentSx,
   jobFormModalPaperSx,
   jobFormModalTitleSx,
   jobItemSectionSx,
-  EMPTY_JOB_FORM_VALUES,
   type JobFormValues,
-} from "./jobFormModalConfig";
-
-type ModalMode = "view" | "edit";
-
-type JobFormModalProps = {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (values: NewJob) => Promise<string | undefined>;
-  onDelete?: (jobId: string) => void;
-  job?: JobType | null;
-  isSubmitting?: boolean;
-};
-
-const REQUIRED_FIELDS: { key: keyof JobFormValues; label: string }[] = [
-  { key: "address", label: "Adresa" },
-  { key: "client_name", label: "Klijent" },
-  { key: "phone", label: "Telefon" },
-  { key: "date", label: "Planirani datum" },
-  { key: "start_time", label: "Vrijeme početka" },
-];
-
-const jobToFormValues = (job?: JobType | null): JobFormValues => {
-  if (!job) return EMPTY_JOB_FORM_VALUES;
-
-  return {
-    address: job.address,
-    client_name: job.client_name,
-    phone: job.phone,
-    date: toDateInputValue(job.date),
-    end_date: toDateInputValue(job.end_date),
-    start_time: job.start_time ?? "",
-    date_finished: job.date_finished ?? "",
-    notes: job.notes ?? "",
-  };
-};
+} from "./utils/jobFormModalConfig";
+import type {
+  JobFormModalProps,
+  ModalMode,
+} from "#/types/job.types.ts/JobFormModalProps";
 
 const JobFormModal = ({
   open,
@@ -99,10 +70,8 @@ const JobFormModal = ({
   const isViewMode = mode === "view";
 
   const queryClient = useQueryClient();
-
-  // Services (with prices) are managed in the price list; the maps turn saved
-  // job items back into names and the picked names back into ids on save.
-  const { serviceIdToName, serviceNameToId, servicePriceByName } = useServices();
+  const { serviceIdToName, serviceNameToId, servicePriceByName } =
+    useServices();
 
   const jobItemsQuery = useQuery({
     queryKey: ["jobItems", job?.id],
@@ -126,8 +95,9 @@ const JobFormModal = ({
     mutationFn: (payload: { jobId: string; items: JobItemInput[] }) =>
       requestSaveJobItems(payload.jobId, payload.items),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobItems", variables.jobId] });
-      // Job items drive the dashboard earnings/material figures.
+      queryClient.invalidateQueries({
+        queryKey: ["jobItems", variables.jobId],
+      });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
@@ -150,7 +120,9 @@ const JobFormModal = ({
   });
 
   const handleSubmit = async () => {
-    const missing = REQUIRED_FIELDS.filter((field) => !values[field.key].trim());
+    const missing = REQUIRED_FIELDS.filter(
+      (field) => !values[field.key].trim(),
+    );
     if (missing.length > 0) {
       setShowErrors(true);
       setValidationError(
@@ -177,8 +149,6 @@ const JobFormModal = ({
     });
   };
 
-  // Marks the job completed by stamping today as the finish date. Works even
-  // when today is before the planned date (a job can be finished early).
   const handleMarkFinished = async () => {
     try {
       await onSubmit(toNewJob({ date_finished: todayInputValue() }));
@@ -187,9 +157,6 @@ const JobFormModal = ({
     }
   };
 
-  // Reopens a finished job as "U tijeku": clears the finish date and stamps the
-  // start as today, so the status isn't computed back to "Novo" for a job whose
-  // planned date is still in the future.
   const handleReturnToProgress = async () => {
     try {
       await onSubmit(

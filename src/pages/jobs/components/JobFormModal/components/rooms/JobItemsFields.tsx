@@ -9,27 +9,24 @@ import {
   getRoomsTotal,
   type JobItemsFieldsHandle,
   type JobRoomFormItem,
-} from "../jobRoomUtils";
+} from "#/pages/jobs/components/JobFormModal/utils/jobRoomUtils";
 import {
   jobRoomAddButtonSx,
   jobRoomsTotalBarSx,
   jobRoomsTotalLabelSx,
   jobRoomsTotalValueSx,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobItemsFieldsProps = {
   defaults: JobRoomFormItem[];
 };
 
-/** Editable list of rooms; the parent reads the values through the ref. */
 const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
   ({ defaults }, ref) => {
     const [rooms, setRooms] = useState<JobRoomFormItem[]>(
       defaults.length > 0 ? defaults : [createEmptyRoom()],
     );
 
-    // Default prices come from the price list (Cjenik); selecting a service
-    // fills that room's price per m² automatically.
     const { serviceNames, servicePriceByName } = useServices();
 
     useImperativeHandle(ref, () => ({ getValues: () => rooms }));
@@ -47,8 +44,6 @@ const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
         prev.length > 1 ? prev.filter((room) => room.id !== id) : prev,
       );
 
-    // Selecting several services sums their price-list rates into this room's
-    // price per m², so the room total rises with each added service.
     const handleServicesChange = (id: string, selectedNames: string[]) => {
       const total = selectedNames.reduce(
         (sum, name) => sum + (servicePriceByName.get(name) ?? 0),

@@ -1,7 +1,7 @@
 import { Box, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "#/utils/format";
 import { getTotalPrice } from "#/utils/getTotalPrice";
-import { getRoomsTotal, type JobRoomFormItem } from "../jobRoomUtils";
+import { getRoomsTotal, type JobRoomFormItem } from "#/pages/jobs/components/JobFormModal/utils/jobRoomUtils";
 import {
   jobRoomCardSx,
   jobRoomHeaderSx,
@@ -13,13 +13,12 @@ import {
   jobRoomViewTitleSx,
   jobRoomViewTotalSx,
   jobServiceViewRowSx,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobRoomsViewProps = {
   rooms: JobRoomFormItem[];
 };
 
-/** Read-only counterpart of JobItemsFields, shown in view mode. */
 const JobRoomsView = ({ rooms }: JobRoomsViewProps) => {
   if (rooms.length === 0) {
     return (
@@ -49,9 +48,7 @@ const JobRoomsView = ({ rooms }: JobRoomsViewProps) => {
             </Typography>
             <Typography sx={jobRoomViewMetaSx}>
               {room.square_meters || 0} m² · {room.price_per_m2 || 0} €/m²
-              {room.material_cost
-                ? ` · materijal ${room.material_cost} €`
-                : ""}
+              {room.material_cost ? ` · materijal ${room.material_cost} €` : ""}
             </Typography>
           </Box>
         </Box>

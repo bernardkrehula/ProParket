@@ -15,16 +15,14 @@ import {
   jobPhotoSectionSx,
   jobPhotoThumbnailSx,
   jobPhotoThumbnailWrapperSx,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobPhotosSectionProps = {
   jobId: string;
-  /** In view mode the upload button and the delete badges are hidden. */
   isViewMode: boolean;
   isMobile: boolean;
 };
 
-/** Photo gallery for a saved job: upload, delete and full-screen preview. */
 const JobPhotosSection = ({
   jobId,
   isViewMode,
@@ -115,9 +113,7 @@ const JobPhotosSection = ({
             variant="outlined"
             disabled={addPhotoMutation.isPending}
           >
-            {addPhotoMutation.isPending
-              ? "Učitavanje..."
-              : "Dodaj fotografiju"}
+            {addPhotoMutation.isPending ? "Učitavanje..." : "Dodaj fotografiju"}
             <input
               type="file"
               accept="image/*"

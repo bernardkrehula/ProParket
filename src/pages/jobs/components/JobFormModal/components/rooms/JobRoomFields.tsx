@@ -10,7 +10,7 @@ import { DeleteOutlined } from "@mui/icons-material";
 import NumberStepperField from "#/components/NumberStepperField";
 import { formatCurrency } from "#/utils/format";
 import { getTotalPrice } from "#/utils/getTotalPrice";
-import type { JobRoomFormItem } from "../jobRoomUtils";
+import type { JobRoomFormItem } from "#/pages/jobs/components/JobFormModal/utils/jobRoomUtils";
 import {
   jobFormModalNumberInputSx,
   jobFormModalRowSx,
@@ -21,14 +21,12 @@ import {
   jobRoomTotalLabelSx,
   jobRoomTotalRowSx,
   jobRoomTotalValueSx,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobRoomFieldsProps = {
   room: JobRoomFormItem;
-  /** Position in the list, used for the "Prostorija N" heading. */
   index: number;
   serviceNames: string[];
-  /** The last remaining room can't be removed. */
   canRemove: boolean;
   onChange: (patch: Partial<JobRoomFormItem>) => void;
   onServicesChange: (services: string[]) => void;
