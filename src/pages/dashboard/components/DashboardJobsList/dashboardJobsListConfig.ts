@@ -58,7 +58,6 @@ export const jobsListRowSx: SxProps<Theme> = {
   },
 };
 
-/** Gradient fill sized to the job's share of the top price — the ranked bar. */
 export const jobsListRowFill = (pct: number): SxProps<Theme> => ({
   position: "absolute",
   left: 0,

@@ -1,4 +1,4 @@
-import type { JobType } from "#/types/Job.type";
+import type { JobType } from "#/types/job.types.ts/Job.type";
 
 export type JobStatus = "new" | "in_progress" | "completed";
 
@@ -8,9 +8,6 @@ export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   completed: "Završeno",
 };
 
-// Parses a "YYYY-MM-DD" (or ISO) value at LOCAL midnight. `new Date("YYYY-MM-DD")`
-// parses as UTC, which in a positive-offset timezone lands after local midnight
-// and mislabels today's jobs as "Novo".
 const parseLocalDate = (value: string) => {
   const [year, month, day] = value.split("T")[0].split("-").map(Number);
   return new Date(year, (month ?? 1) - 1, day ?? 1);

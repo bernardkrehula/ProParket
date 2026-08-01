@@ -1,7 +1,6 @@
 import type { SxProps, Theme } from "@mui/material";
 import { LABEL_FONT } from "#/theme/tokens";
 
-// Herringbone parquet motif — the product itself as the brand texture.
 const HERRINGBONE =
   "<svg xmlns='http://www.w3.org/2000/svg' width='60' height='30'>" +
   "<g fill='none' stroke='rgba(124,131,240,0.16)' stroke-width='1.5'>" +

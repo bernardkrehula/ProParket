@@ -1,11 +1,8 @@
 export type PeriodType = "day" | "month" | "year" | "custom";
 
 export type PeriodRange = {
-  /** Inclusive lower bound. */
   from: Date;
-  /** Exclusive upper bound. */
   to: Date;
-  /** Human label for the resolved range, e.g. "Srpanj 2026." */
   label: string;
 };
 
@@ -47,10 +44,6 @@ type PeriodInput = {
   to?: Date;
 };
 
-/**
- * Resolves a period choice into a concrete [from, to) range plus a display
- * label. `to` is always exclusive so range filters can use `< to`.
- */
 export const getPeriodRange = (
   type: PeriodType,
   input: PeriodInput = {},
@@ -70,7 +63,6 @@ export const getPeriodRange = (
     case "custom": {
       const from = input.from ? startOfDay(input.from) : startOfDay(now);
       const lastDay = input.to ? startOfDay(input.to) : from;
-      // Guard against an inverted range so the query never asks for from > to.
       const safeLast = lastDay < from ? from : lastDay;
       return {
         from,

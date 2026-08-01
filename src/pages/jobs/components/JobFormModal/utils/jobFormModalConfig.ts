@@ -57,29 +57,100 @@ export const jobFormModalTimeInputSx: SxProps<Theme> = {
 export const jobFormModalNumberInputSx: SxProps<Theme> = {
   "& input[type='number']": {
     colorScheme: "dark",
-    MozAppearance: "textfield",
   },
-  "& input[type='number']::-webkit-inner-spin-button, & input[type='number']::-webkit-outer-spin-button":
-    {
-      WebkitAppearance: "none",
-      margin: 0,
-    },
 };
 
-export const jobFormModalStepperButtonsSx: SxProps<Theme> = {
-  mr: -1,
+export const addressMapPreviewSx: SxProps<Theme> = {
+  position: "relative",
+  height: 150,
+  borderRadius: "10px",
+  overflow: "hidden",
+  border: "1px solid",
+  borderColor: "divider",
+  bgcolor: "rgba(255, 255, 255, 0.02)",
+  "& .gm-style, & .gm-style > div": {
+    borderRadius: "10px",
+  },
+  "& .gm-style-cc": {
+    display: "none",
+  },
 };
 
-export const jobFormModalStepperButtonSx: SxProps<Theme> = {
+export const addressMapOverlaySx: SxProps<Theme> = {
+  position: "absolute",
+  inset: 0,
   p: 0,
-  height: 16,
-  width: 20,
-  borderRadius: 0.5,
-  color: "text.secondary",
+  border: "none",
+  bgcolor: "transparent",
+  cursor: "pointer",
+  transition: "background-color 120ms ease",
   "&:hover": {
-    color: "primary.main",
-    bgcolor: "action.hover",
+    bgcolor: "rgba(0, 0, 0, 0.12)",
   },
+  "&:focus-visible": {
+    outline: "2px solid",
+    outlineColor: "primary.main",
+    outlineOffset: "-2px",
+  },
+};
+
+export const addressSuggestionsPaperSx: SxProps<Theme> = {
+  mt: 0.5,
+  borderRadius: "10px",
+  border: "1px solid",
+  borderColor: "divider",
+  backgroundImage: "none",
+  bgcolor: "background.paper",
+  boxShadow: "0 12px 32px rgba(0, 0, 0, 0.45)",
+  "& .MuiAutocomplete-listbox": {
+    p: 0.5,
+    scrollbarWidth: "thin",
+  },
+  "& .MuiAutocomplete-option": {
+    borderRadius: "8px",
+    "&[aria-selected='true'], &.Mui-focused": {
+      bgcolor: "rgba(59, 91, 219, 0.16)",
+    },
+  },
+};
+
+export const addressOptionSx: SxProps<Theme> = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 1.25,
+  minWidth: 0,
+};
+
+export const addressOptionIconSx: SxProps<Theme> = {
+  fontSize: 18,
+  mt: 0.25,
+  flexShrink: 0,
+  color: "primary.light",
+};
+
+export const addressOptionMainSx: SxProps<Theme> = {
+  fontFamily: LABEL_FONT,
+  fontSize: 14.5,
+  fontWeight: 600,
+  color: "text.primary",
+  lineHeight: 1.35,
+};
+
+export const addressOptionSecondarySx: SxProps<Theme> = {
+  fontSize: 12.5,
+  color: "text.secondary",
+  lineHeight: 1.35,
+};
+
+export const addressAttributionSx: SxProps<Theme> = {
+  display: "block",
+  px: 1.5,
+  py: 0.75,
+  fontSize: 11,
+  letterSpacing: "0.02em",
+  color: "text.disabled",
+  borderTop: "1px solid",
+  borderColor: "divider",
 };
 
 export const jobFormModalActionsSx: SxProps<Theme> = {
@@ -360,3 +431,5 @@ export const EMPTY_JOB_FORM_VALUES = {
   date_finished: "",
   notes: "",
 };
+
+export type JobFormValues = typeof EMPTY_JOB_FORM_VALUES;

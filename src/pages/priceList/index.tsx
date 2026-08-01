@@ -97,7 +97,6 @@ const PriceList = () => {
     </Box>
   );
 
-  // Fixed-position toast so errors are visible on click even when scrolled down.
   const errorToast = (
     <Snackbar
       open={Boolean(actionError)}

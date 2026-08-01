@@ -12,7 +12,7 @@ import {
   priceCardLabelSx,
   priceCardFieldSx,
   priceCardSaveButtonSx,
-} from "../priceListConfig";
+} from "#/pages/priceList/priceListConfig";
 
 type ServicePriceCardProps = {
   service: ServiceRow;

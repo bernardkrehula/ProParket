@@ -14,7 +14,6 @@ export const earningsChartRootSx: SxProps<Theme> = {
 
 export const earningsChartTitleSx: SxProps<Theme> = microLabelSx;
 
-/** Desktop vertical bar chart: theme the x-charts value labels. */
 export const earningsChartSx: SxProps<Theme> = {
   mt: 1,
   "& .MuiBarChart-label": {
@@ -25,7 +24,6 @@ export const earningsChartSx: SxProps<Theme> = {
   },
 };
 
-/* ---- Mobile: ranked meter list ---- */
 
 export const earningsListSx: SxProps<Theme> = {
   mt: 2.5,

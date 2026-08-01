@@ -3,11 +3,8 @@ export type JobType = {
   address: string;
   client_name: string;
   phone: string;
-  /** Planned start date of the job ("YYYY-MM-DD"). */
   date: string;
-  /** Planned end date; null means a single-day job. */
   end_date: string | null;
-  /** Planned start time of day, stored as "HH:MM" (or null). */
   start_time: string | null;
   notes: string | null;
   created_at: string;

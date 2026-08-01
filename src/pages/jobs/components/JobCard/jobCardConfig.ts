@@ -29,7 +29,6 @@ export const jobCardRootSx = (token: JobStatusToken): SxProps<Theme> => ({
   "&:active": {
     bgcolor: "action.hover",
   },
-  // The overlay button below is invisible, so the card carries its focus ring.
   "&:has(> button:focus-visible)": {
     outline: "2px solid",
     outlineColor: token.rail,
@@ -37,11 +36,6 @@ export const jobCardRootSx = (token: JobStatusToken): SxProps<Theme> => ({
   },
 });
 
-/**
- * Covers the whole card so tapping anywhere opens the job. Kept as a real
- * button rather than a click handler on the card so it is keyboard reachable,
- * and separate from the phone link so both can be actioned independently.
- */
 export const jobCardOverlayButtonSx: SxProps<Theme> = {
   position: "absolute",
   inset: 0,
@@ -56,7 +50,6 @@ export const jobCardOverlayButtonSx: SxProps<Theme> = {
   },
 };
 
-/** Sits above the overlay button so the number is tappable on its own. */
 export const jobCardInteractiveSx: SxProps<Theme> = {
   position: "relative",
   zIndex: 2,
@@ -107,7 +100,6 @@ export const jobCardFieldValueMutedSx: SxProps<Theme> = {
   color: "text.secondary",
 };
 
-/** The start time leads the planned field — bigger and bolder than the date. */
 export const jobCardTimeSx: SxProps<Theme> = {
   fontFamily: MONO_FONT,
   fontSize: 20,
@@ -132,7 +124,6 @@ export const jobCardPhoneSx: SxProps<Theme> = {
   display: "inline-flex",
   alignItems: "center",
   gap: 0.75,
-  // Comfortable one-handed tap target on site, pulled flush with the card edge.
   minHeight: 44,
   py: 1,
   px: 1.25,

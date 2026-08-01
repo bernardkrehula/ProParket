@@ -6,8 +6,6 @@ import {
   type JobStatusToken,
 } from "#/pages/jobs/jobsTokens";
 
-/** Fixed widths keep the table filling the space next to the sidebar
- *  instead of bunching up on the left. */
 export const JOBS_TABLE_COLUMNS = [
   { id: "job", label: "Posao", width: "26%" },
   { id: "phone", label: "Kontakt", width: "14%" },
@@ -71,7 +69,6 @@ export const jobsTableBodyCellSx: SxProps<Theme> = {
   verticalAlign: "middle",
 };
 
-/** Carries the status rail down the leading edge of the row. */
 export const jobsTableLeadCellSx = (token: JobStatusToken): SxProps<Theme> => ({
   ...jobsTableBodyCellSx,
   position: "relative",
@@ -164,10 +161,6 @@ export const jobsTableNotesCellSx: SxProps<Theme> = {
   },
 };
 
-/**
- * One column on a phone, two once there is room for them — so the tablet and
- * small-laptop range gets a real layout instead of very wide single cards.
- */
 export const jobsCardListSx: SxProps<Theme> = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",

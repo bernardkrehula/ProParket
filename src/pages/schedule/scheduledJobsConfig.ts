@@ -27,7 +27,6 @@ export const scheduledViewToggleSx: SxProps<Theme> = {
   p: 0.5,
   gap: 0.5,
   flexShrink: 0,
-  // Size to its buttons instead of stretching full width on a phone.
   alignSelf: { xs: "flex-start", sm: "auto" },
   "& .MuiToggleButtonGroup-grouped": {
     border: 0,

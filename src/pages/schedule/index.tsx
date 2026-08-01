@@ -14,7 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { requestJobs } from "#/api/jobs/requestJobs";
 import { requestEditJob } from "#/api/jobs/requestEditJob";
 import { requestDeleteJob } from "#/api/jobs/requestDeleteJob";
-import type { JobType, NewJob } from "#/types/Job.type";
+import type { JobType, NewJob } from "#/types/job.types.ts/Job.type";
 import { formatDate } from "#/utils/format";
 import JobFormModal from "#/pages/jobs/components/JobFormModal";
 import JobCard from "#/pages/jobs/components/JobCard";
@@ -55,7 +55,10 @@ const Schedule = () => {
   const [view, setView] = useState<ScheduleView>("cards");
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
-  const onViewChange = (_event: MouseEvent<HTMLElement>, next: ScheduleView | null) => {
+  const onViewChange = (
+    _event: MouseEvent<HTMLElement>,
+    next: ScheduleView | null,
+  ) => {
     if (next) setView(next);
   };
 
@@ -86,7 +89,6 @@ const Schedule = () => {
 
     jobs.forEach((job) => {
       const dateKey = toDateKey(job.date);
-      // Range upper bound is exclusive.
       if (dateKey < fromKey || dateKey >= toKey) return;
 
       const existing = groups.get(dateKey);
@@ -126,7 +128,9 @@ const Schedule = () => {
     onSuccess: onJobMutated,
   });
 
-  const onSubmitJobForm = async (values: NewJob): Promise<string | undefined> => {
+  const onSubmitJobForm = async (
+    values: NewJob,
+  ): Promise<string | undefined> => {
     if (!selectedJob) return undefined;
     await editJobMutation.mutateAsync({ id: selectedJob.id, values });
     return selectedJob.id;
@@ -173,7 +177,10 @@ const Schedule = () => {
           <Typography sx={scheduledJobsSubtitleSx}>{range.label}</Typography>
         )}
       </Box>
-      <Stack direction={{ xs: "column", sm: "row" }} sx={scheduledJobsControlsSx}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        sx={scheduledJobsControlsSx}
+      >
         {view === "cards" && (
           <PeriodFilter
             period={period}

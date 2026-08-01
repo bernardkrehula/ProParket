@@ -3,7 +3,7 @@ import { GenericError } from "#/utils/GenericError";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as v from "valibot";
-import type { LoginScheme } from "../loginScheme";
+import type { LoginScheme } from "#/pages/login/loginScheme";
 import { isAuthApiError } from "@supabase/supabase-js";
 import type { Credentials } from "#/types/Credentials.type";
 import type { Handler } from "#/types/Handler.type";

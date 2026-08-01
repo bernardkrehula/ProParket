@@ -39,7 +39,6 @@ type DonutCenterLabelProps = {
   secondary: string;
 };
 
-// Rendered inside the PieChart SVG, centred on the drawing area.
 const DonutCenterLabel = ({ primary, secondary }: DonutCenterLabelProps) => {
   const { width, height, left, top } = useDrawingArea();
   const cx = left + width / 2;

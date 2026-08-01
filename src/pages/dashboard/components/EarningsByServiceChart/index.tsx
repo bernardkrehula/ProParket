@@ -34,8 +34,6 @@ type EarningsByServiceChartProps = {
 
 const EarningsByServiceChart = ({ data }: EarningsByServiceChartProps) => {
   const theme = useTheme();
-  // On a phone a vertical bar chart is cramped and its labels collide, so the
-  // breakdown becomes a ranked meter list — one full-width lane per service.
   const isCompact = useMediaQuery(theme.breakpoints.down("sm"));
 
   const labels = data.map((item) => item.label);
