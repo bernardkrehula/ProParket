@@ -9,7 +9,7 @@ import {
   priceListAddNameFieldSx,
   priceListAddPriceFieldSx,
   priceListAddButtonSx,
-} from "../priceListConfig";
+} from "#/pages/priceList/priceListConfig";
 
 type AddServiceFormProps = {
   existingNames: string[];
