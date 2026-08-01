@@ -1,23 +1,22 @@
 import type { ChangeEvent } from "react";
 import { Stack, TextField } from "@mui/material";
 import { MuiTelInput } from "mui-tel-input";
+import AddressAutocomplete from "./address/AddressAutocomplete";
 import {
   jobFormModalDateInputSx,
   jobFormModalFieldsSx,
   jobFormModalRowSx,
   jobFormModalTimeInputSx,
   type JobFormValues,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobFormFieldsProps = {
   values: JobFormValues;
   isNewJob: boolean;
-  /** Turns on the "Obavezno polje." messages after a failed submit. */
   showErrors: boolean;
   onValueChange: (field: keyof JobFormValues, value: string) => void;
 };
 
-/** Editable job fields, shown in edit mode. */
 const JobFormFields = ({
   values,
   isNewJob,
@@ -40,12 +39,11 @@ const JobFormFields = ({
 
   return (
     <Stack spacing={2} sx={jobFormModalFieldsSx}>
-      <TextField
-        label="Adresa"
+      <AddressAutocomplete
         value={values.address}
-        onChange={handleChange("address")}
-        {...requiredProps("address")}
-        fullWidth
+        onValueChange={(address) => onValueChange("address", address)}
+        error={isFieldInvalid("address")}
+        helperText={isFieldInvalid("address") ? "Obavezno polje." : undefined}
       />
 
       <Stack direction={{ xs: "column", sm: "row" }} sx={jobFormModalRowSx}>
