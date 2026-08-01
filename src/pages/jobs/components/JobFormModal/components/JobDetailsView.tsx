@@ -1,10 +1,11 @@
-import { Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { formatDate, formatTime } from "#/utils/format";
+import JobAddressMap from "./address/JobAddressMap";
 import {
   jobDetailLabelSx,
   jobDetailValueSx,
   type JobFormValues,
-} from "../jobFormModalConfig";
+} from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type DetailField = {
   label: string;
@@ -34,7 +35,6 @@ type JobDetailsViewProps = {
   values: JobFormValues;
 };
 
-/** Read-only rendering of the job's fields, shown in view mode. */
 const JobDetailsView = ({ values }: JobDetailsViewProps) => (
   <Stack spacing={2}>
     {JOB_DETAIL_FIELDS.map((field) => (
@@ -56,6 +56,12 @@ const JobDetailsView = ({ values }: JobDetailsViewProps) => (
               ? formatTime(values[field.key] || null)
               : values[field.key] || (field.emptyFallback ?? "-")}
         </Typography>
+
+        {field.key === "address" && values.address && (
+          <Box sx={{ mt: 1 }}>
+            <JobAddressMap address={values.address} />
+          </Box>
+        )}
       </Stack>
     ))}
   </Stack>
