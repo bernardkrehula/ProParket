@@ -1,7 +1,7 @@
 import { Box, Divider, Stack, Typography } from "@mui/material";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
-import type { JobType } from "#/types/Job.type";
+import type { JobType } from "#/types/job.types.ts/Job.type";
 import { formatDateShort, formatTime } from "#/utils/format";
 import { getJobStatus } from "#/utils/getJobStatus";
 import { JOB_STATUS_TOKENS } from "#/pages/jobs/jobsTokens";
@@ -77,7 +77,9 @@ const JobCard = ({ job, onClick }: JobCardProps) => {
         <Box sx={jobCardFieldSx}>
           <Typography sx={jobCardFieldLabelSx}>Završeno</Typography>
           <Typography
-            sx={job.date_finished ? jobCardFieldValueSx : jobCardFieldValueMutedSx}
+            sx={
+              job.date_finished ? jobCardFieldValueSx : jobCardFieldValueMutedSx
+            }
           >
             {finishedLabel}
           </Typography>

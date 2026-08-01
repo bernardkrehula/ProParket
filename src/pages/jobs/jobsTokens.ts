@@ -1,7 +1,5 @@
 import type { JobStatus } from "#/utils/getJobStatus";
 
-// Shared type and surface primitives now live in the theme so every page reads
-// as one system. Re-exported here so existing jobs imports keep working.
 export {
   MONO_FONT,
   LABEL_FONT,
@@ -11,13 +9,9 @@ export {
 } from "#/theme/tokens";
 
 export type JobStatusToken = {
-  /** Text and dot colour. */
   fg: string;
-  /** Tonal pill fill. */
   bg: string;
-  /** Tonal pill border. */
   border: string;
-  /** Leading-edge rail on a row or a card. */
   rail: string;
 };
 

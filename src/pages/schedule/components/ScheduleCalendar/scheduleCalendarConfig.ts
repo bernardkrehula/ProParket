@@ -55,7 +55,6 @@ export const calendarNavIconButtonSx: SxProps<Theme> = {
 
 export const calendarWeekdayRowSx: SxProps<Theme> = {
   display: "grid",
-  // minmax(0, 1fr) keeps all 7 columns exactly equal regardless of content.
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
   borderBottom: "1px solid",
   borderColor: "divider",
@@ -83,7 +82,6 @@ export const calendarDayCellSx = (inMonth: boolean): SxProps<Theme> => ({
   borderBottom: "1px solid",
   borderColor: "divider",
   bgcolor: inMonth ? "transparent" : "rgba(0, 0, 0, 0.18)",
-  // Trim the right edge so the outer border isn't doubled.
   "&:nth-of-type(7n)": { borderRight: 0 },
 });
 
@@ -136,7 +134,6 @@ export const calendarMoreSx: SxProps<Theme> = {
   px: 0.625,
 };
 
-/* ---- Week rows with multi-day spanning bars ---- */
 
 export const calendarWeekSx: SxProps<Theme> = {
   position: "relative",

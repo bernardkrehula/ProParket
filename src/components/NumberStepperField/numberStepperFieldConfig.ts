@@ -1,6 +1,5 @@
 import type { SxProps, Theme } from "@mui/material";
 
-/** Hides the browser's native number spinners so our own arrows show instead. */
 export const numberStepperFieldSx: SxProps<Theme> = {
   "& input[type='number']": {
     MozAppearance: "textfield",

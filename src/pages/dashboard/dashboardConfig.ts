@@ -1,7 +1,6 @@
 import type { SxProps, Theme } from "@mui/material";
 import { microLabelSx } from "#/theme/tokens";
 
-/** Accent per stat, keyed to meaning and shared with the profit donut. */
 export type StatAccent = {
   main: string;
   soft: string;
@@ -50,7 +49,6 @@ export const dashboardStatsRowSx: SxProps<Theme> = {
   gap: 2,
 };
 
-/** Donut on the left, service breakdown on the right, stacked on small screens. */
 export const dashboardPanelsRowSx: SxProps<Theme> = {
   display: "grid",
   gridTemplateColumns: {

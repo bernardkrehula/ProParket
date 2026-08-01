@@ -25,7 +25,7 @@ import { requestJobs } from "#/api/jobs/requestJobs";
 import { requestAddNewJob } from "#/api/jobs/requestAddNewJob";
 import { requestEditJob } from "#/api/jobs/requestEditJob";
 import { requestDeleteJob } from "#/api/jobs/requestDeleteJob";
-import type { JobType, NewJob } from "#/types/Job.type";
+import type { JobType, NewJob } from "#/types/job.types.ts/Job.type";
 import { getJobStatus, JOB_STATUS_LABELS } from "#/utils/getJobStatus";
 import type { JobStatus } from "#/utils/getJobStatus";
 import JobsTable from "./components/JobsTable";
@@ -91,7 +91,6 @@ const Jobs = () => {
     const toKey = dateKeyOf(range.to);
 
     return jobs.filter((job) => {
-      // Range upper bound is exclusive; job.date is a "YYYY-MM-DD" string.
       if (job.date < fromKey || job.date >= toKey) return false;
       if (statusFilter !== ALL_STATUSES && getJobStatus(job) !== statusFilter) {
         return false;
@@ -109,7 +108,6 @@ const Jobs = () => {
 
   const onJobSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["jobs"] });
-    // Dashboard stats (job count, earnings) are a separate query — refresh them too.
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setIsModalOpen(false);
   };
@@ -189,7 +187,9 @@ const Jobs = () => {
     setIsModalOpen(false);
   };
 
-  const onSubmitJobForm = async (values: NewJob): Promise<string | undefined> => {
+  const onSubmitJobForm = async (
+    values: NewJob,
+  ): Promise<string | undefined> => {
     if (selectedJob) {
       await editJobMutation.mutateAsync({ id: selectedJob.id, values });
       return selectedJob.id;

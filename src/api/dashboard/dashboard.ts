@@ -15,28 +15,19 @@ export type DashboardJob = {
   client_name: string;
   phone: string;
   date: string;
-  /** Σ square_meters × price_per_m2 across this job's items. */
   price: number;
 };
 
 export type DashboardSummary = {
-  /** Σ square_meters × price_per_m2 over job_items in range. */
   totalIncome: number;
-  /** Σ material_cost over job_items in range. */
   materialCost: number;
-  /** totalIncome − materialCost. */
   netProfit: number;
-  /** netProfit / totalIncome, in [−∞, 1]; 0 when there is no income. */
   profitMargin: number;
-  /** Count of jobs whose date falls in range. */
   jobsCount: number;
-  /** Income grouped by service, largest first, zero-income services dropped. */
   earningsByService: ServiceEarning[];
-  /** Jobs whose date falls in range, with their total price. */
   jobs: DashboardJob[];
 };
 
-// Reuse the app's chart hues first, then extend for any further services.
 const SERVICE_PALETTE = [
   chartColors.brusenje,
   chartColors.poliranje,
@@ -102,7 +93,6 @@ export const fetchDashboardData = async (
   const services = (servicesRes.data ?? []) as ServiceRow[];
   const jobRows = (jobsRes.data ?? []) as JobRow[];
 
-  // Total price per job, for the jobs list under the charts.
   const priceByJob = new Map<string, number>();
   if (jobRows.length > 0) {
     const jobPricesRes = await supabase

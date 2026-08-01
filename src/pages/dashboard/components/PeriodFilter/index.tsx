@@ -37,7 +37,6 @@ const PeriodFilter = ({
     _event: MouseEvent<HTMLElement>,
     next: PeriodType | null,
   ) => {
-    // Ignore deselection so one option is always active.
     if (next) onPeriodChange(next);
   };
 

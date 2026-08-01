@@ -1,8 +1,15 @@
 import { useMemo } from "react";
-import { Box, Button, IconButton, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  IconButton,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import type { JobType } from "#/types/Job.type";
+import type { JobType } from "#/types/job.types.ts/Job.type";
 import { getJobStatus } from "#/utils/getJobStatus";
 import { JOB_STATUS_TOKENS } from "#/pages/jobs/jobsTokens";
 import {
@@ -48,7 +55,6 @@ const parseLocal = (value: string) => {
   return new Date(year, (m ?? 1) - 1, d ?? 1);
 };
 
-// Whole-day difference, DST-safe (compares calendar days, not elapsed time).
 const daysBetween = (from: Date, to: Date) =>
   Math.round(
     (Date.UTC(to.getFullYear(), to.getMonth(), to.getDate()) -
@@ -71,7 +77,7 @@ const ScheduleCalendar = ({
     const year = month.getFullYear();
     const monthIndex = month.getMonth();
     const first = new Date(year, monthIndex, 1);
-    const offset = (first.getDay() + 6) % 7; // Monday-first
+    const offset = (first.getDay() + 6) % 7;
     const grid = Array.from(
       { length: 42 },
       (_, i) => new Date(year, monthIndex, 1 - offset + i),
@@ -79,7 +85,6 @@ const ScheduleCalendar = ({
     return { days: grid, monthLabel: monthFmt.format(first) };
   }, [month]);
 
-  // Each week: its 7 days plus the lane-packed job segments that fall in it.
   const weeks = useMemo(() => {
     const gridStart = days[0];
 
@@ -117,7 +122,6 @@ const ScheduleCalendar = ({
             b.endCol - b.startCol - (a.endCol - a.startCol),
         );
 
-      // Greedy lane packing so overlapping bars stack instead of collide.
       const laneEnds: number[] = [];
       segments.forEach((seg) => {
         let lane = laneEnds.findIndex((end) => end < seg.startCol);
@@ -181,16 +185,17 @@ const ScheduleCalendar = ({
 
       {weeks.map((week, weekIndex) => (
         <Box key={weekIndex} sx={calendarWeekSx}>
-          {/* Background day cells (borders, dimming) span all lane rows */}
           {week.weekDays.map((day, col) => (
             <Box
               key={`bg-${col}`}
-              sx={calendarDayBgSx(day.getMonth() === month.getMonth(), col === 6)}
+              sx={calendarDayBgSx(
+                day.getMonth() === month.getMonth(),
+                col === 6,
+              )}
               style={{ gridColumn: col + 1, gridRow: "1 / -1" }}
             />
           ))}
 
-          {/* Day numbers */}
           {week.weekDays.map((day, col) => (
             <Box
               key={`num-${col}`}
@@ -209,7 +214,6 @@ const ScheduleCalendar = ({
             </Box>
           ))}
 
-          {/* Spanning job bars */}
           {week.segments.map((seg) => (
             <Box
               key={seg.job.id}

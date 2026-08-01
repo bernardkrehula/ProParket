@@ -2,7 +2,6 @@ import supabase from "#/config/supabaseClientVite";
 import { handleSupabaseError } from "#/lib/handleSupabaseError";
 
 export type JobItemInput = {
-  /** Room / area name this line belongs to (e.g. "Dnevni boravak"). */
   room: string | null;
   service_id: string;
   square_meters: number;

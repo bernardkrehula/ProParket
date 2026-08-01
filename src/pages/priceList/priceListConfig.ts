@@ -1,7 +1,6 @@
 import type { SxProps, Theme } from "@mui/material";
 import { LABEL_FONT, MONO_FONT, microLabelSx } from "#/theme/tokens";
 
-/** One accent per service, assigned by index. Mirrors the dashboard hues. */
 export const SERVICE_COLORS = [
   "#7c83f0",
   "#22b389",

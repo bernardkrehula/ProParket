@@ -29,7 +29,6 @@ export const jobsFiltersGroupSx: SxProps<Theme> = {
   alignItems: "stretch",
 };
 
-/** Floats the period filter to the right on its own row; full width on phones. */
 export const jobsPeriodFilterWrapSx: SxProps<Theme> = {
   alignSelf: { xs: "stretch", sm: "flex-end" },
 };
@@ -50,7 +49,6 @@ export const jobsStatusSelectSx: SxProps<Theme> = {
 export const PAGE_SIZE = 10;
 export const ALL_STATUSES = "all";
 
-/** Croatian counts: 1 posao, 2–4 posla, 5+ poslova (11–14 take poslova). */
 export const getJobCountLabel = (count: number) => {
   const lastTwo = count % 100;
   const last = count % 10;

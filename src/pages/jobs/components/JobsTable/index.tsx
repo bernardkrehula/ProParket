@@ -19,7 +19,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import SearchOffRoundedIcon from "@mui/icons-material/SearchOffRounded";
-import type { JobType } from "#/types/Job.type";
+import type { JobType } from "#/types/job.types.ts/Job.type";
 import { formatDateShort, formatTime } from "#/utils/format";
 import { getJobStatus } from "#/utils/getJobStatus";
 import { JOB_STATUS_TOKENS } from "#/pages/jobs/jobsTokens";
@@ -81,17 +81,16 @@ const JobsTable = ({
   hasNextPage,
 }: JobsTableProps) => {
   const theme = useTheme();
-  // Next to the 240px sidebar the table only fits from lg up; below that it
-  // would scroll sideways, so it becomes a card list instead.
   const isCompact = useMediaQuery(theme.breakpoints.down("lg"));
 
   const handleRowClick = (job: JobType) => () => onRowClick(job);
 
-  const handleRowKeyDown = (job: JobType) => (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    onRowClick(job);
-  };
+  const handleRowKeyDown =
+    (job: JobType) => (event: KeyboardEvent<HTMLElement>) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      onRowClick(job);
+    };
 
   const getFinishedLabel = (job: JobType) => {
     if (job.date_finished) return formatDateShort(job.date_finished);
@@ -194,7 +193,9 @@ const JobsTable = ({
                   onKeyDown={handleRowKeyDown(job)}
                   sx={jobsTableRowSx}
                 >
-                  <TableCell sx={jobsTableLeadCellSx(JOB_STATUS_TOKENS[status])}>
+                  <TableCell
+                    sx={jobsTableLeadCellSx(JOB_STATUS_TOKENS[status])}
+                  >
                     <Typography sx={jobsTableAddressSx} title={job.address}>
                       {job.address}
                     </Typography>

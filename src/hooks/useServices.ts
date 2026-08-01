@@ -2,11 +2,6 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { requestServices } from "#/api/services/requestServices";
 
-/**
- * Services and their price-list rates (Cjenik), indexed for the lookups the job
- * form needs: names for the pickers, id <-> name for reading and saving
- * job_items rows, and the rate per name for computing a room's price per m².
- */
 export const useServices = () => {
   const servicesQuery = useQuery({
     queryKey: ["services"],
