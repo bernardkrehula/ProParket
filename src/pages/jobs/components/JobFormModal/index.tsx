@@ -180,9 +180,10 @@ const JobFormModal = ({
         items: roomsToJobItems(itemsValues, serviceNameToId, servicePriceByName),
         materials: roomsToJobMaterials(itemsValues),
       });
-    } catch {
+    } catch (error: unknown) {
+      const detail = error instanceof Error ? error.message : "";
       setValidationError(
-        "Posao je spremljen, ali stavke i materijal nisu. Provjerite postoje li tablice job_items i materials.",
+        `Posao je spremljen, ali stavke i materijal nisu. ${detail}`.trim(),
       );
       return;
     }

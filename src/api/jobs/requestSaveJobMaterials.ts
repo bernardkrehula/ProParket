@@ -1,5 +1,5 @@
 import supabase from "#/config/supabaseClientVite";
-import { handleSupabaseError } from "#/lib/handleSupabaseError";
+import { GenericError } from "#/utils/GenericError";
 import { MATERIALS_TABLE } from "./requestJobMaterials";
 
 export type JobMaterialInput = {
@@ -18,8 +18,14 @@ export const requestSaveJobMaterials = async (
     .delete()
     .eq("job_id", jobId);
 
-  const deleteError = handleSupabaseError(deleteResponse);
-  if (deleteError) return deleteError;
+  // Surfaced verbatim rather than collapsed into a generic error: a failure
+  // here is almost always a schema or policy mismatch, and the Postgres
+  // message names the offending column.
+  if (deleteResponse.error) {
+    throw new GenericError(
+      `${MATERIALS_TABLE} (brisanje): ${deleteResponse.error.message}`,
+    );
+  }
 
   if (materials.length === 0) return deleteResponse;
 
@@ -27,8 +33,11 @@ export const requestSaveJobMaterials = async (
     .from(MATERIALS_TABLE)
     .insert(materials.map((material) => ({ ...material, job_id: jobId })));
 
-  const insertError = handleSupabaseError(insertResponse);
-  if (insertError) return insertError;
+  if (insertResponse.error) {
+    throw new GenericError(
+      `${MATERIALS_TABLE} (spremanje): ${insertResponse.error.message}`,
+    );
+  }
 
   return insertResponse;
 };

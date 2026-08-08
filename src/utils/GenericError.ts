@@ -1,8 +1,8 @@
 export class GenericError extends Error {
   isCustom: boolean;
 
-  constructor() {
-    const message = "An unexpected error occurred";
+  constructor(detail?: string) {
+    const message = detail?.trim() || "An unexpected error occurred";
 
     super(message);
     this.name = "GenericError";
