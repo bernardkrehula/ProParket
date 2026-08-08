@@ -5,6 +5,7 @@ import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlin
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import SellOutlinedIcon from "@mui/icons-material/SellOutlined";
+import SavingsOutlinedIcon from "@mui/icons-material/SavingsOutlined";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { requestLogout } from "#/api/auth/requestLogout";
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: "Poslovi", to: "/poslovi", icon: WorkOutlineOutlinedIcon },
   { label: "Raspored", to: "/raspored", icon: CalendarMonthOutlinedIcon },
   { label: "Cjenik", to: "/cjenik", icon: SellOutlinedIcon },
+  { label: "Ulaganja", to: "/ulaganja", icon: SavingsOutlinedIcon },
 ];
 
 const Navbar = ({ onNavigate }: NavbarProps) => {

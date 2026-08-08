@@ -7,6 +7,7 @@ import Login from "#/pages/login";
 import PrivateRoutes from "#/routes/PrivateRoutes";
 import PublicRoutes from "#/routes/PublicRoutes";
 import PriceList from "#/pages/priceList/index.tsx";
+import Investments from "#/pages/investments";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
           { path: "poslovi", element: <Jobs /> },
           { path: "raspored", element: <Schedule /> },
           { path: "cjenik", element: <PriceList /> },
+          { path: "ulaganja", element: <Investments /> },
         ],
       },
     ],
