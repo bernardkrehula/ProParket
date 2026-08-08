@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Box, CircularProgress, Stack, Typography } from "@mui/material";
 import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
 import Inventory2RoundedIcon from "@mui/icons-material/Inventory2Rounded";
+import SavingsRoundedIcon from "@mui/icons-material/SavingsRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import WorkOutlineRoundedIcon from "@mui/icons-material/WorkOutlineRounded";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -115,10 +116,17 @@ const Dashboard = () => {
               accent={STAT_ACCENTS.material}
             />
             <StatCard
+              label="Ulaganja"
+              value={formatCurrency(data.investmentCost)}
+              icon={SavingsRoundedIcon}
+              accent={STAT_ACCENTS.investment}
+            />
+            <StatCard
               label="Neto dobit"
               value={formatCurrency(data.netProfit)}
               icon={TrendingUpRoundedIcon}
               accent={STAT_ACCENTS.profit}
+              hint="Nakon materijala i ulaganja"
             />
             <StatCard
               label="Broj poslova"
@@ -132,6 +140,7 @@ const Dashboard = () => {
             <ProfitDonut
               totalIncome={data.totalIncome}
               materialCost={data.materialCost}
+              investmentCost={data.investmentCost}
               netProfit={data.netProfit}
               profitMargin={data.profitMargin}
             />

@@ -7,11 +7,12 @@ export type StatAccent = {
 };
 
 export const STAT_ACCENTS: Record<
-  "income" | "material" | "profit" | "jobs",
+  "income" | "material" | "investment" | "profit" | "jobs",
   StatAccent
 > = {
   income: { main: "#3b5bdb", soft: "rgba(59, 91, 219, 0.15)" },
   material: { main: "#f0913c", soft: "rgba(240, 145, 60, 0.15)" },
+  investment: { main: "#e0428a", soft: "rgba(224, 66, 138, 0.15)" },
   profit: { main: "#2bbd8c", soft: "rgba(43, 189, 140, 0.15)" },
   jobs: { main: "#7c83f0", soft: "rgba(124, 131, 240, 0.15)" },
 };
@@ -44,7 +45,8 @@ export const dashboardStatsRowSx: SxProps<Theme> = {
   display: "grid",
   gridTemplateColumns: {
     xs: "repeat(2, 1fr)",
-    md: "repeat(4, 1fr)",
+    md: "repeat(3, 1fr)",
+    lg: "repeat(5, 1fr)",
   },
   gap: 2,
 };

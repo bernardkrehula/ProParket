@@ -21,6 +21,7 @@ export type DashboardJob = {
 export type DashboardSummary = {
   totalIncome: number;
   materialCost: number;
+  investmentCost: number;
   netProfit: number;
   profitMargin: number;
   jobsCount: number;
@@ -67,10 +68,15 @@ type JobPriceRow = {
   price_per_m2: number | string | null;
 };
 
+type InvestmentCostRow = {
+  unit_price: number | string | null;
+  quantity: number | string | null;
+};
+
 export const fetchDashboardData = async (
   range: PeriodRange,
 ): Promise<DashboardSummary> => {
-  const [itemsRes, servicesRes, jobsRes] = await Promise.all([
+  const [itemsRes, servicesRes, jobsRes, investmentsRes] = await Promise.all([
     supabase
       .from("job_items")
       .select("square_meters, price_per_m2, material_cost, service_id")
@@ -83,6 +89,11 @@ export const fetchDashboardData = async (
       .gte("date", toDateStr(range.from))
       .lt("date", toDateStr(range.to))
       .order("date", { ascending: false }),
+    supabase
+      .from("investments")
+      .select("unit_price, quantity")
+      .gte("purchase_date", toDateStr(range.from))
+      .lt("purchase_date", toDateStr(range.to)),
   ]);
 
   if (itemsRes.error) throw itemsRes.error;
@@ -92,6 +103,18 @@ export const fetchDashboardData = async (
   const items = (itemsRes.data ?? []) as JobItemRow[];
   const services = (servicesRes.data ?? []) as ServiceRow[];
   const jobRows = (jobsRes.data ?? []) as JobRow[];
+
+  // Deliberately not thrown: if the `investments` table is missing the rest of
+  // the dashboard must still render, just with investments counted as zero.
+  const investmentRows = investmentsRes.error
+    ? []
+    : ((investmentsRes.data ?? []) as InvestmentCostRow[]);
+
+  const investmentCost = investmentRows.reduce(
+    (sum, row) =>
+      sum + (Number(row.unit_price) || 0) * (Number(row.quantity) || 0),
+    0,
+  );
 
   const priceByJob = new Map<string, number>();
   if (jobRows.length > 0) {
@@ -138,7 +161,7 @@ export const fetchDashboardData = async (
     }
   }
 
-  const netProfit = totalIncome - materialCost;
+  const netProfit = totalIncome - materialCost - investmentCost;
   const profitMargin = totalIncome > 0 ? netProfit / totalIncome : 0;
 
   const earningsByService: ServiceEarning[] = services
@@ -154,6 +177,7 @@ export const fetchDashboardData = async (
   return {
     totalIncome,
     materialCost,
+    investmentCost,
     netProfit,
     profitMargin,
     jobsCount: jobs.length,
