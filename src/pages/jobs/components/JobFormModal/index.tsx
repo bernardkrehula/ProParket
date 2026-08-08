@@ -182,7 +182,7 @@ const JobFormModal = ({
       });
     } catch {
       setValidationError(
-        "Posao je spremljen, ali stavke i materijal nisu. Provjerite postoje li tablice job_items i job_materials.",
+        "Posao je spremljen, ali stavke i materijal nisu. Provjerite postoje li tablice job_items i materials.",
       );
       return;
     }

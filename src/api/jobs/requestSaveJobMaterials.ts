@@ -1,5 +1,6 @@
 import supabase from "#/config/supabaseClientVite";
 import { handleSupabaseError } from "#/lib/handleSupabaseError";
+import { MATERIALS_TABLE } from "./requestJobMaterials";
 
 export type JobMaterialInput = {
   room: string | null;
@@ -13,7 +14,7 @@ export const requestSaveJobMaterials = async (
   materials: JobMaterialInput[],
 ) => {
   const deleteResponse = await supabase
-    .from("job_materials")
+    .from(MATERIALS_TABLE)
     .delete()
     .eq("job_id", jobId);
 
@@ -23,7 +24,7 @@ export const requestSaveJobMaterials = async (
   if (materials.length === 0) return deleteResponse;
 
   const insertResponse = await supabase
-    .from("job_materials")
+    .from(MATERIALS_TABLE)
     .insert(materials.map((material) => ({ ...material, job_id: jobId })));
 
   const insertError = handleSupabaseError(insertResponse);
