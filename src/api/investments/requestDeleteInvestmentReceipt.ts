@@ -1,6 +1,6 @@
 import supabase from "#/config/supabaseClientVite";
 import { handleSupabaseError } from "#/lib/handleSupabaseError";
-import { INVESTMENT_RECEIPTS_BUCKET } from "./requestInvestmentReceipts";
+import { BILL_PHOTOS_BUCKET } from "./requestInvestmentReceipts";
 
 export const requestDeleteInvestmentReceipt = async (
   investmentId: string,
@@ -9,7 +9,7 @@ export const requestDeleteInvestmentReceipt = async (
   const filePath = `${investmentId}/${fileName}`;
 
   const response = await supabase.storage
-    .from(INVESTMENT_RECEIPTS_BUCKET)
+    .from(BILL_PHOTOS_BUCKET)
     .remove([filePath]);
 
   const authError = handleSupabaseError(response);

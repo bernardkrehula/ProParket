@@ -69,31 +69,31 @@ create policy "job materials are writable by authenticated"
   with check (true);
 
 -- ---------------------------------------------------------------------------
--- 3. Receipt storage for investments
+-- 3. Bill photo storage for investments
 -- ---------------------------------------------------------------------------
 -- Private bucket, mirroring how `job-photos` is used. Files are read through
 -- short-lived signed URLs, so this must NOT be made public.
 insert into storage.buckets (id, name, public)
-values ('investment-receipts', 'investment-receipts', false)
+values ('bill-photos', 'bill-photos', false)
 on conflict (id) do nothing;
 
-drop policy if exists "investment receipts read" on storage.objects;
-create policy "investment receipts read"
+drop policy if exists "bill photos read" on storage.objects;
+create policy "bill photos read"
   on storage.objects for select
   to authenticated
-  using (bucket_id = 'investment-receipts');
+  using (bucket_id = 'bill-photos');
 
-drop policy if exists "investment receipts insert" on storage.objects;
-create policy "investment receipts insert"
+drop policy if exists "bill photos insert" on storage.objects;
+create policy "bill photos insert"
   on storage.objects for insert
   to authenticated
-  with check (bucket_id = 'investment-receipts');
+  with check (bucket_id = 'bill-photos');
 
-drop policy if exists "investment receipts delete" on storage.objects;
-create policy "investment receipts delete"
+drop policy if exists "bill photos delete" on storage.objects;
+create policy "bill photos delete"
   on storage.objects for delete
   to authenticated
-  using (bucket_id = 'investment-receipts');
+  using (bucket_id = 'bill-photos');
 
 -- ---------------------------------------------------------------------------
 -- Note on job_items.material_cost

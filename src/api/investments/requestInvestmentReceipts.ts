@@ -1,11 +1,11 @@
 import supabase from "#/config/supabaseClientVite";
 import { handleSupabaseError } from "#/lib/handleSupabaseError";
 
-export const INVESTMENT_RECEIPTS_BUCKET = "investment-receipts";
+export const BILL_PHOTOS_BUCKET = "bill-photos";
 
 export const requestInvestmentReceipts = async (investmentId: string) => {
   const response = await supabase.storage
-    .from(INVESTMENT_RECEIPTS_BUCKET)
+    .from(BILL_PHOTOS_BUCKET)
     .list(investmentId);
 
   const authError = handleSupabaseError(response);
@@ -17,7 +17,7 @@ export const requestInvestmentReceipts = async (investmentId: string) => {
   if (paths.length === 0) return { ...response, data: [] };
 
   const signedResponse = await supabase.storage
-    .from(INVESTMENT_RECEIPTS_BUCKET)
+    .from(BILL_PHOTOS_BUCKET)
     .createSignedUrls(paths, 60 * 60);
 
   const signError = handleSupabaseError(signedResponse);
