@@ -37,6 +37,12 @@ create policy "investments are writable by authenticated"
   using (true)
   with check (true);
 
+-- RLS policies decide which rows a role may touch; these decide whether the
+-- role may touch the table at all. Tables created from the SQL editor do not
+-- get them automatically, and without them every query fails with
+-- "permission denied" no matter how permissive the policies are.
+grant select, insert, update, delete on public.investments to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- 2. Job materials
 -- ---------------------------------------------------------------------------
@@ -70,6 +76,8 @@ create policy "materials are writable by authenticated"
   to authenticated
   using (true)
   with check (true);
+
+grant select, insert, update, delete on public.materials to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 3. Bill photo storage for investments
