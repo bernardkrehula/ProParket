@@ -106,10 +106,12 @@ const Jobs = () => {
   const rangeEnd = Math.min(currentPage * PAGE_SIZE, filteredJobs.length);
   const pagedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, rangeEnd);
 
+  // Deliberately does not close the modal: the job row is only half the save.
+  // JobFormModal closes itself once its items and materials are stored too,
+  // so a failure there stays on screen instead of vanishing with the dialog.
   const onJobSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["jobs"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    setIsModalOpen(false);
   };
 
   const addJobMutation = useMutation({
@@ -125,7 +127,10 @@ const Jobs = () => {
 
   const deleteJobMutation = useMutation({
     mutationFn: requestDeleteJob,
-    onSuccess: onJobSaved,
+    onSuccess: () => {
+      onJobSaved();
+      setIsModalOpen(false);
+    },
   });
 
   const debouncedSearch = useMemo(

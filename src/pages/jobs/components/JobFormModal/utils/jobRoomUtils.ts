@@ -149,9 +149,30 @@ export const groupJobItemsIntoRooms = (
     materialsByRoom.set(roomName, list);
   });
 
+  // A room with no services selected produces no job_items rows, so it would
+  // otherwise disappear on reload and take its materials with it.
+  materialsByRoom.forEach((_list, roomName) => {
+    if (roomsByName.has(roomName)) return;
+
+    roomsByName.set(roomName, {
+      id: `room-materials-${order.length}`,
+      room: roomName,
+      services: [],
+      square_meters: "",
+      priceSum: 0,
+      materialSum: 0,
+    });
+    order.push(roomName);
+  });
+
+  // Only fall back to the old single figure when the job has no itemised
+  // materials at all. Doing it per-room would relabel a genuinely empty room
+  // as "Materijal" and hide a failed save behind plausible-looking data.
+  const isLegacyJob = materials.length === 0;
+
   return order.map((name) => {
     const room = roomsByName.get(name)!;
-    const stored = materialsByRoom.get(name);
+    const stored = materialsByRoom.get(name) ?? [];
 
     return {
       id: room.id,
@@ -159,8 +180,7 @@ export const groupJobItemsIntoRooms = (
       services: room.services,
       square_meters: room.square_meters,
       price_per_m2: room.priceSum > 0 ? String(room.priceSum) : "",
-      materials:
-        stored && stored.length > 0 ? stored : legacyMaterial(room.materialSum),
+      materials: isLegacyJob ? legacyMaterial(room.materialSum) : stored,
     };
   });
 };
