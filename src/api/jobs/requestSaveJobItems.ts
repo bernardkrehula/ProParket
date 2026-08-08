@@ -1,5 +1,5 @@
 import supabase from "#/config/supabaseClientVite";
-import { handleSupabaseError } from "#/lib/handleSupabaseError";
+import { GenericError } from "#/utils/GenericError";
 
 export type JobItemInput = {
   room: string | null;
@@ -12,8 +12,11 @@ export type JobItemInput = {
 export const requestSaveJobItems = async (jobId: string, items: JobItemInput[]) => {
   const deleteResponse = await supabase.from("job_items").delete().eq("job_id", jobId);
 
-  const deleteError = handleSupabaseError(deleteResponse);
-  if (deleteError) return deleteError;
+  if (deleteResponse.error) {
+    throw new GenericError(
+      `job_items (brisanje): ${deleteResponse.error.message}`,
+    );
+  }
 
   if (items.length === 0) return deleteResponse;
 
@@ -21,8 +24,11 @@ export const requestSaveJobItems = async (jobId: string, items: JobItemInput[]) 
     .from("job_items")
     .insert(items.map((item) => ({ ...item, job_id: jobId })));
 
-  const insertError = handleSupabaseError(insertResponse);
-  if (insertError) return insertError;
+  if (insertResponse.error) {
+    throw new GenericError(
+      `job_items (spremanje): ${insertResponse.error.message}`,
+    );
+  }
 
   return insertResponse;
 };

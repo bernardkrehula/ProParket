@@ -1,6 +1,8 @@
 import supabase from "#/config/supabaseClientVite";
 import { handleSupabaseError } from "#/lib/handleSupabaseError";
 
+export const MATERIALS_TABLE = "materials";
+
 export type JobMaterialRow = {
   id: string;
   job_id: string;
@@ -12,7 +14,7 @@ export type JobMaterialRow = {
 
 export const requestJobMaterials = async (jobId: string) => {
   const response = await supabase
-    .from("job_materials")
+    .from(MATERIALS_TABLE)
     .select("id, job_id, room, name, quantity, unit_price")
     .eq("job_id", jobId)
     .order("created_at", { ascending: true });

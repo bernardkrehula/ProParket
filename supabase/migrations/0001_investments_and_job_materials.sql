@@ -1,7 +1,7 @@
 -- Run this in the Supabase SQL editor before using the new screens.
 -- Two independent changes:
 --   1. `investments` — backs the new /ulaganja page.
---   2. `job_materials` — per-room material line items (name + count + unit price),
+--   2. `materials` — per-room material line items (name + count + unit price),
 --      replacing the single "material_cost" number that used to be typed per room.
 
 -- ---------------------------------------------------------------------------
@@ -37,10 +37,19 @@ create policy "investments are writable by authenticated"
   using (true)
   with check (true);
 
+-- RLS policies decide which rows a role may touch; these decide whether the
+-- role may touch the table at all. Tables created from the SQL editor do not
+-- get them automatically, and without them every query fails with
+-- "permission denied" no matter how permissive the policies are.
+grant select, insert, update, delete on public.investments to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- 2. Job materials
 -- ---------------------------------------------------------------------------
-create table if not exists public.job_materials (
+-- The app reads and writes `public.materials`. If you already have this table,
+-- `create table if not exists` leaves it untouched -- verify it carries every
+-- column below, since the app selects them by name.
+create table if not exists public.materials (
   id         uuid primary key default gen_random_uuid(),
   job_id     uuid not null references public.jobs (id) on delete cascade,
   room       text,
@@ -50,23 +59,25 @@ create table if not exists public.job_materials (
   created_at timestamptz not null default now()
 );
 
-create index if not exists job_materials_job_id_idx
-  on public.job_materials (job_id);
+create index if not exists materials_job_id_idx
+  on public.materials (job_id);
 
-alter table public.job_materials enable row level security;
+alter table public.materials enable row level security;
 
-drop policy if exists "job materials are readable by authenticated" on public.job_materials;
-create policy "job materials are readable by authenticated"
-  on public.job_materials for select
+drop policy if exists "materials are readable by authenticated" on public.materials;
+create policy "materials are readable by authenticated"
+  on public.materials for select
   to authenticated
   using (true);
 
-drop policy if exists "job materials are writable by authenticated" on public.job_materials;
-create policy "job materials are writable by authenticated"
-  on public.job_materials for all
+drop policy if exists "materials are writable by authenticated" on public.materials;
+create policy "materials are writable by authenticated"
+  on public.materials for all
   to authenticated
   using (true)
   with check (true);
+
+grant select, insert, update, delete on public.materials to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 3. Bill photo storage for investments

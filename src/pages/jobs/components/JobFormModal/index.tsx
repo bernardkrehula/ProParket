@@ -169,13 +169,26 @@ const JobFormModal = ({
       return;
     }
 
-    if (!savedJobId || !itemsValues) return;
+    if (!savedJobId || !itemsValues) {
+      onClose();
+      return;
+    }
 
-    saveJobItemsMutation.mutate({
-      jobId: savedJobId,
-      items: roomsToJobItems(itemsValues, serviceNameToId, servicePriceByName),
-      materials: roomsToJobMaterials(itemsValues),
-    });
+    try {
+      await saveJobItemsMutation.mutateAsync({
+        jobId: savedJobId,
+        items: roomsToJobItems(itemsValues, serviceNameToId, servicePriceByName),
+        materials: roomsToJobMaterials(itemsValues),
+      });
+    } catch (error: unknown) {
+      const detail = error instanceof Error ? error.message : "";
+      setValidationError(
+        `Posao je spremljen, ali stavke i materijal nisu. ${detail}`.trim(),
+      );
+      return;
+    }
+
+    onClose();
   };
 
   const handleMarkFinished = async () => {
@@ -184,6 +197,7 @@ const JobFormModal = ({
     } catch {
       return;
     }
+    onClose();
   };
 
   const handleReturnToProgress = async () => {
@@ -194,6 +208,7 @@ const JobFormModal = ({
     } catch {
       return;
     }
+    onClose();
   };
 
   const onCancelEdit = () => {
