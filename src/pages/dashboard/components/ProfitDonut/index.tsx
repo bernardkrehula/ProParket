@@ -27,11 +27,13 @@ import {
 type ProfitDonutProps = {
   totalIncome: number;
   materialCost: number;
+  investmentCost: number;
   netProfit: number;
   profitMargin: number;
 };
 
 const MATERIAL_COLOR = STAT_ACCENTS.material.main;
+const INVESTMENT_COLOR = STAT_ACCENTS.investment.main;
 const PROFIT_COLOR = STAT_ACCENTS.profit.main;
 
 type DonutCenterLabelProps = {
@@ -82,11 +84,13 @@ const DonutCenterLabel = ({ primary, secondary }: DonutCenterLabelProps) => {
 const ProfitDonut = ({
   totalIncome,
   materialCost,
+  investmentCost,
   netProfit,
   profitMargin,
 }: ProfitDonutProps) => {
   const hasIncome = totalIncome > 0;
   const materialShare = hasIncome ? materialCost / totalIncome : 0;
+  const investmentShare = hasIncome ? investmentCost / totalIncome : 0;
   const profitShare = hasIncome ? netProfit / totalIncome : 0;
 
   return (
@@ -116,6 +120,12 @@ const ProfitDonut = ({
                       value: materialCost,
                       label: "Trošak materijala",
                       color: MATERIAL_COLOR,
+                    },
+                    {
+                      id: "investment",
+                      value: investmentCost,
+                      label: "Ulaganja",
+                      color: INVESTMENT_COLOR,
                     },
                     {
                       id: "profit",
@@ -150,6 +160,19 @@ const ProfitDonut = ({
             </Box>
             <Typography sx={profitDonutLegendPctSx}>
               {formatPercent(materialShare)}
+            </Typography>
+          </Stack>
+
+          <Stack direction="row" sx={profitDonutLegendRowSx}>
+            <Box sx={profitDonutLegendDot(INVESTMENT_COLOR)} />
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography sx={profitDonutLegendLabelSx}>Ulaganja</Typography>
+              <Typography sx={profitDonutLegendValueSx}>
+                {formatCurrency(investmentCost)}
+              </Typography>
+            </Box>
+            <Typography sx={profitDonutLegendPctSx}>
+              {formatPercent(investmentShare)}
             </Typography>
           </Stack>
 

@@ -278,6 +278,98 @@ export const jobRoomTotalValueSx: SxProps<Theme> = {
   color: "text.primary",
 };
 
+export const jobMaterialsSectionSx: SxProps<Theme> = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 1,
+  pt: 1.25,
+  borderTop: "1px dashed",
+  borderColor: "divider",
+};
+
+export const jobMaterialsHeaderSx: SxProps<Theme> = {
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 1,
+};
+
+export const jobMaterialsTitleSx: SxProps<Theme> = {
+  fontFamily: LABEL_FONT,
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.07em",
+  textTransform: "uppercase",
+  color: "text.secondary",
+};
+
+/**
+ * Mobile keeps the name on its own row so quantity and price stay tappable;
+ * from `sm` up the whole line collapses into a single row.
+ */
+export const jobMaterialRowSx: SxProps<Theme> = {
+  display: "grid",
+  gridTemplateColumns: {
+    xs: "1fr auto",
+    sm: "minmax(0, 1fr) 88px 116px auto",
+  },
+  gridTemplateAreas: {
+    xs: `"name remove" "qty price"`,
+    sm: `"name qty price remove"`,
+  },
+  gap: 1,
+  alignItems: "start",
+};
+
+export const jobMaterialNameFieldSx: SxProps<Theme> = {
+  gridArea: "name",
+  minWidth: 0,
+};
+
+export const jobMaterialQuantityFieldSx: SxProps<Theme> = {
+  gridArea: "qty",
+  minWidth: 0,
+  "& input[type='number']": {
+    colorScheme: "dark",
+  },
+};
+
+export const jobMaterialPriceFieldSx: SxProps<Theme> = {
+  gridArea: "price",
+  minWidth: 0,
+  "& input[type='number']": {
+    colorScheme: "dark",
+  },
+};
+
+export const jobMaterialRemoveButtonSx: SxProps<Theme> = {
+  gridArea: "remove",
+  alignSelf: "center",
+  color: "text.secondary",
+  "&:hover": { color: "error.main", bgcolor: "rgba(244, 67, 54, 0.08)" },
+};
+
+export const jobMaterialLineTotalSx: SxProps<Theme> = {
+  fontFamily: MONO_FONT,
+  fontSize: 12.5,
+  color: "text.secondary",
+  textAlign: "right",
+  mt: -0.5,
+};
+
+export const jobMaterialAddButtonSx: SxProps<Theme> = {
+  alignSelf: "flex-start",
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: 13,
+  color: "primary.light",
+  px: 1,
+};
+
+export const jobMaterialsEmptySx: SxProps<Theme> = {
+  fontSize: 12.5,
+  color: "text.disabled",
+};
+
 export const jobRoomAddButtonSx: SxProps<Theme> = {
   alignSelf: "flex-start",
   textTransform: "none",

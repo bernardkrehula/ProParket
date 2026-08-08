@@ -15,6 +15,10 @@ import type { NewJob } from "#/types/job.types.ts/Job.type";
 import { requestJobItems } from "#/api/jobs/requestJobItems";
 import { requestSaveJobItems } from "#/api/jobs/requestSaveJobItems";
 import type { JobItemInput } from "#/api/jobs/requestSaveJobItems";
+import { requestJobMaterials } from "#/api/jobs/requestJobMaterials";
+import type { JobMaterialRow } from "#/api/jobs/requestJobMaterials";
+import { requestSaveJobMaterials } from "#/api/jobs/requestSaveJobMaterials";
+import type { JobMaterialInput } from "#/api/jobs/requestSaveJobMaterials";
 import { useServices } from "#/hooks/useServices";
 import { todayInputValue } from "#/utils/format";
 import { getJobStatus } from "#/utils/getJobStatus";
@@ -31,6 +35,7 @@ import {
   jobToFormValues,
   REQUIRED_FIELDS,
   roomsToJobItems,
+  roomsToJobMaterials,
   type JobItemsFieldsHandle,
 } from "./utils/jobRoomUtils";
 import {
@@ -86,17 +91,40 @@ const JobFormModal = ({
     return response.data;
   }, [jobItemsQuery.data]);
 
+  const jobMaterialsQuery = useQuery({
+    queryKey: ["jobMaterials", job?.id],
+    queryFn: () => requestJobMaterials(job!.id),
+    enabled: Boolean(job?.id),
+  });
+
+  const jobMaterials = useMemo<JobMaterialRow[]>(() => {
+    const response = jobMaterialsQuery.data;
+    if (!response || !("data" in response) || !response.data) return [];
+
+    return response.data as JobMaterialRow[];
+  }, [jobMaterialsQuery.data]);
+
   const jobItemDefaults = useMemo(
-    () => groupJobItemsIntoRooms(jobItems, serviceIdToName),
-    [jobItems, serviceIdToName],
+    () => groupJobItemsIntoRooms(jobItems, serviceIdToName, jobMaterials),
+    [jobItems, serviceIdToName, jobMaterials],
   );
 
   const saveJobItemsMutation = useMutation({
-    mutationFn: (payload: { jobId: string; items: JobItemInput[] }) =>
-      requestSaveJobItems(payload.jobId, payload.items),
+    mutationFn: (payload: {
+      jobId: string;
+      items: JobItemInput[];
+      materials: JobMaterialInput[];
+    }) =>
+      Promise.all([
+        requestSaveJobItems(payload.jobId, payload.items),
+        requestSaveJobMaterials(payload.jobId, payload.materials),
+      ]),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["jobItems", variables.jobId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["jobMaterials", variables.jobId],
       });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
@@ -146,6 +174,7 @@ const JobFormModal = ({
     saveJobItemsMutation.mutate({
       jobId: savedJobId,
       items: roomsToJobItems(itemsValues, serviceNameToId, servicePriceByName),
+      materials: roomsToJobMaterials(itemsValues),
     });
   };
 
@@ -235,7 +264,7 @@ const JobFormModal = ({
             <JobRoomsView rooms={jobItemDefaults} />
           ) : (
             <JobItemsFields
-              key={jobItemsQuery.dataUpdatedAt}
+              key={`${jobItemsQuery.dataUpdatedAt}-${jobMaterialsQuery.dataUpdatedAt}`}
               ref={jobItemsFieldsRef}
               defaults={jobItemDefaults}
             />

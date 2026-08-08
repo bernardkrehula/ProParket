@@ -10,7 +10,11 @@ import { DeleteOutlined } from "@mui/icons-material";
 import NumberStepperField from "#/components/NumberStepperField";
 import { formatCurrency } from "#/utils/format";
 import { getTotalPrice } from "#/utils/getTotalPrice";
-import type { JobRoomFormItem } from "#/pages/jobs/components/JobFormModal/utils/jobRoomUtils";
+import JobMaterialsFields from "./JobMaterialsFields";
+import type {
+  JobMaterialFormItem,
+  JobRoomFormItem,
+} from "#/pages/jobs/components/JobFormModal/utils/jobRoomUtils";
 import {
   jobFormModalNumberInputSx,
   jobFormModalRowSx,
@@ -94,13 +98,10 @@ const JobRoomFields = ({
       />
     </Stack>
 
-    <NumberStepperField
-      label="Trošak materijala"
-      value={room.material_cost}
-      onValueChange={(value) => onChange({ material_cost: value })}
-      unit="€"
-      sx={jobFormModalNumberInputSx}
-      fullWidth
+    <JobMaterialsFields
+      materials={room.materials}
+      roomIndex={index}
+      onChange={(materials: JobMaterialFormItem[]) => onChange({ materials })}
     />
 
     <Stack direction="row" sx={jobRoomTotalRowSx}>
