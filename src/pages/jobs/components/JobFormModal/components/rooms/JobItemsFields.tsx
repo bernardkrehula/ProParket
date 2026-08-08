@@ -6,6 +6,7 @@ import { formatCurrency } from "#/utils/format";
 import JobRoomFields from "./JobRoomFields";
 import {
   createEmptyRoom,
+  getRoomsMaterialsTotal,
   getRoomsTotal,
   type JobItemsFieldsHandle,
   type JobRoomFormItem,
@@ -15,6 +16,9 @@ import {
   jobRoomsTotalBarSx,
   jobRoomsTotalLabelSx,
   jobRoomsTotalValueSx,
+  jobRoomTotalLabelSx,
+  jobRoomTotalRowSx,
+  jobRoomTotalValueSx,
 } from "#/pages/jobs/components/JobFormModal/utils/jobFormModalConfig";
 
 type JobItemsFieldsProps = {
@@ -80,6 +84,13 @@ const JobItemsFields = forwardRef<JobItemsFieldsHandle, JobItemsFieldsProps>(
         >
           Dodaj prostoriju
         </Button>
+
+        <Stack direction="row" sx={jobRoomTotalRowSx}>
+          <Typography sx={jobRoomTotalLabelSx}>Ukupno materijal</Typography>
+          <Typography sx={jobRoomTotalValueSx}>
+            {formatCurrency(getRoomsMaterialsTotal(rooms))}
+          </Typography>
+        </Stack>
 
         <Stack direction="row" sx={jobRoomsTotalBarSx}>
           <Typography sx={jobRoomsTotalLabelSx}>Ukupna cijena posla</Typography>
