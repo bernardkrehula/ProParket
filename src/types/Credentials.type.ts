@@ -1,4 +1,4 @@
 export type Credentials = {
-  email: FormDataEntryValue;
-  password: FormDataEntryValue;
+  email: string;
+  password: string;
 };
