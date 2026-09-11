@@ -144,6 +144,27 @@ export const loginButtonSx: SxProps<Theme> = {
   textTransform: "none",
 };
 
+export const loginGuestButtonSx: SxProps<Theme> = {
+  py: 1.25,
+  borderRadius: "10px",
+  fontFamily: LABEL_FONT,
+  fontWeight: 600,
+  fontSize: 15,
+  textTransform: "none",
+};
+
+export const loginDividerSx: SxProps<Theme> = {
+  "&::before, &::after": {
+    borderColor: "divider",
+  },
+  "& .MuiDivider-wrapper": {
+    fontSize: 12,
+    color: "text.secondary",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+  },
+};
+
 export const loginErrorSx: SxProps<Theme> = {
   color: "error.main",
   fontSize: 14,
