@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Divider,
   IconButton,
   InputAdornment,
   Stack,
@@ -13,6 +14,7 @@ import {
 import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
 import MailOutlineRoundedIcon from "@mui/icons-material/MailOutlineRounded";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { requestLogin } from "#/api/auth/requestLogin";
@@ -34,9 +36,16 @@ import {
   loginSubheadingSx,
   loginFieldSx,
   loginButtonSx,
+  loginGuestButtonSx,
+  loginDividerSx,
   loginErrorSx,
 } from "./loginConfig";
 import { LoginScheme } from "./loginScheme";
+
+const GUEST_CREDENTIALS = {
+  email: "demo@gmail.com",
+  password: "demo1234",
+};
 
 const Login = () => {
   const { error, isLoading, handleAuth } = useAuth(requestLogin, LoginScheme);
@@ -50,6 +59,10 @@ const Login = () => {
     const password = String(formData.get("password") ?? "");
 
     handleAuth({ email, password });
+  };
+
+  const handleGuestLogin = () => {
+    handleAuth(GUEST_CREDENTIALS);
   };
 
   if (isLoading) {
@@ -160,6 +173,19 @@ const Login = () => {
               sx={loginButtonSx}
             >
               Prijavi se
+            </Button>
+
+            <Divider sx={loginDividerSx}>ili</Divider>
+
+            <Button
+              type="button"
+              variant="outlined"
+              size="large"
+              onClick={handleGuestLogin}
+              startIcon={<PersonOutlineRoundedIcon />}
+              sx={loginGuestButtonSx}
+            >
+              Prijavi se kao gost
             </Button>
           </Stack>
         </Box>
